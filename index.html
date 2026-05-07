@@ -239,6 +239,8 @@ html, body {
   border-radius: 5px; padding: 1px 6px; font-weight: 700;
   animation: vix-pg 1.3s ease-in-out infinite;
 }
+.fx-cheap { background:rgba(39,174,96,.18); color:#1d6f42; border-radius:5px; padding:1px 6px; font-weight:600; }
+.fx-dear  { background:rgba(192,57,43,.18); color:#c0392b; border-radius:5px; padding:1px 6px; font-weight:600; }
 @keyframes ro { to { transform: rotate(360deg); } }
 #btn-reload.spinning svg { animation: ro .65s linear infinite; }
 
@@ -711,28 +713,31 @@ async function loadFX() {
     const data = {};
     lines.forEach(line => {
       if (!line.trim()) return;
-      // Format: EURUSD,"1,17133"  or  EURUSD,1,17133
-      // Use splitLine which handles quoted fields correctly
       const cols = splitLine(line.replace(/\r/g,''));
       if (cols.length < 2) return;
       const key = cols[0].replace(/[^A-Za-z]/g,'').toUpperCase();
       if (!key) return;
       const val = parseNum(cols[1]);
-      if (val !== null) data[key] = val;
+      const p20 = parseNum(cols[3]);
+      const p80 = parseNum(cols[4]);
+      if (val !== null) data[key] = { val, p20, p80 };
     });
     const setFx = (id, key) => {
       const el = document.getElementById(id);
       if (!el) return;
-      const v = data[key];
-      if (v != null) el.textContent = v.toFixed(2); // keep old value if null
+      const d = data[key];
+      if (!d) return;
+      el.textContent = d.val.toFixed(2);
+      el.className = 'fx-val';
+      if (d.p20 != null && d.p80 != null) {
+        if (d.val >= d.p80)      el.className = 'fx-val fx-cheap';
+        else if (d.val <= d.p20) el.className = 'fx-val fx-dear';
+      }
     };
-
-    // Only update if we got a valid value (don't clear previous good values)
     setFx('fx-eurusd', 'EURUSD');
     setFx('fx-eurgbp', 'EURGBP');
     setFx('fx-eurhkd', 'EURHKD');
     setFx('fx-euraud', 'EURAUD');
-
   } catch(e) {
     console.warn('FX load error:', e);
   }
