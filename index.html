@@ -505,6 +505,9 @@ td {
     <div class="fx-chip"><span class="fx-lbl">EUR/HKD</span><span class="fx-val" id="fx-eurhkd">—</span></div>
     <div class="fx-chip"><span class="fx-lbl">EUR/AUD</span><span class="fx-val" id="fx-euraud">—</span></div>
     <div class="fx-chip"><span class="fx-lbl">VIX</span><span class="fx-val" id="fx-vix">—</span></div>
+    <div class="fx-chip"><span class="fx-lbl">VSTOXX</span><span class="fx-val" id="fx-vstoxx">—</span></div>
+    <div class="fx-chip"><span class="fx-lbl">VFTSE</span><span class="fx-val" id="fx-vftse">—</span></div>
+    <div class="fx-chip"><span class="fx-lbl">VHSI</span><span class="fx-val" id="fx-vhsi">—</span></div>
     <button class="fx-chip" id="btn-reload" onclick="manualReload()" title="Actualizar" style="cursor:pointer;border:none;background:var(--sur)">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--lbl)" stroke-width="2.2">
         <path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8"/>
@@ -540,8 +543,9 @@ td {
 <div id="toast"></div>
 
 <script>
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhCXI4uXagUPUSv-QomsWuEoCDHlFlxzrFTXSgi9aQ8Oy1sEacerfIdKxPGZdm1VJw-P1PzNQH5Q3_/pub?gid=0&single=true&output=csv';
-const FX_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhCXI4uXagUPUSv-QomsWuEoCDHlFlxzrFTXSgi9aQ8Oy1sEacerfIdKxPGZdm1VJw-P1PzNQH5Q3_/pub?gid=1216010991&single=true&output=csv';
+const CSV_URL     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhCXI4uXagUPUSv-QomsWuEoCDHlFlxzrFTXSgi9aQ8Oy1sEacerfIdKxPGZdm1VJw-P1PzNQH5Q3_/pub?gid=0&single=true&output=csv';
+const FX_URL      = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhCXI4uXagUPUSv-QomsWuEoCDHlFlxzrFTXSgi9aQ8Oy1sEacerfIdKxPGZdm1VJw-P1PzNQH5Q3_/pub?gid=1216010991&single=true&output=csv';
+const INDICES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhCXI4uXagUPUSv-QomsWuEoCDHlFlxzrFTXSgi9aQ8Oy1sEacerfIdKxPGZdm1VJw-P1PzNQH5Q3_/pub?gid=929095159&single=true&output=csv';
 const REFRESH_MS = 5000; // auto-refresh every 5 seconds
 
 
@@ -683,7 +687,7 @@ async function loadSheet(silent=false){
   btn.classList.remove('spinning');
   _loading=false;
 }
-function manualReload(){ loadSheet(false); loadFX(); }
+function manualReload(){ loadSheet(false); loadFX(); loadIndices(); }
 
 async function loadFX() {
   try {
@@ -715,45 +719,63 @@ async function loadFX() {
     setFx('fx-eurhkd', 'EURHKD');
     setFx('fx-euraud', 'EURAUD');
 
-    // VIX with color coding: <15 low (green), 15-25 mid (orange), >25 high (red)
-    const vixEl = document.getElementById('fx-vix');
-    const vix = data['VIX'];
-    if (vixEl && vix != null) {
-      vixEl.textContent = vix.toFixed(2);
-      const vixChip = vixEl.closest('.fx-chip');
-      if (vixChip) vixChip.className = 'fx-chip'; // always reset chip
-
-      // Gradient: green(≤15) → yellow(15-30) → orange-red(30-40) → red(>40)
-      let color;
-      if (vix <= 15) {
-        color = '#1d6f42';
-      } else if (vix <= 30) {
-        const t = (vix - 15) / 15;
-        const cr = Math.round(29  + (241 - 29)  * t);
-        const cg = Math.round(111 + (196 - 111) * t);
-        const cb = Math.round(66  + (15  - 66)  * t);
-        color = `rgb(${Math.round(cr*.65)},${Math.round(cg*.65)},${Math.round(cb*.65)})`;
-      } else if (vix <= 40) {
-        const t = (vix - 30) / 10;
-        const cr = Math.round(241 + (192 - 241) * t);
-        const cg = Math.round(196 + (57  - 196) * t);
-        const cb = Math.round(15  + (43  - 15)  * t);
-        color = `rgb(${Math.round(cr*.6)},${Math.round(cg*.6)},${Math.round(cb*.6)})`;
-      } else {
-        color = '#8b0000';
-      }
-
-      vixEl.style.color = color;
-      vixEl.style.fontWeight = vix >= 30 ? '700' : '600';
-      vixEl.className = vix >= 30 ? 'fx-val vix-val-anim' : 'fx-val';
-    }
   } catch(e) {
     console.warn('FX load error:', e);
   }
 }
 
+// ── VOL COLOR ──
+function applyVolColor(el, v) {
+  let color;
+  if (v <= 15) {
+    color = '#1d6f42';
+  } else if (v <= 30) {
+    const t = (v - 15) / 15;
+    const cr = Math.round(29  + (241 - 29)  * t);
+    const cg = Math.round(111 + (196 - 111) * t);
+    const cb = Math.round(66  + (15  - 66)  * t);
+    color = `rgb(${Math.round(cr*.65)},${Math.round(cg*.65)},${Math.round(cb*.65)})`;
+  } else if (v <= 40) {
+    const t = (v - 30) / 10;
+    const cr = Math.round(241 + (192 - 241) * t);
+    const cg = Math.round(196 + (57  - 196) * t);
+    const cb = Math.round(15  + (43  - 15)  * t);
+    color = `rgb(${Math.round(cr*.6)},${Math.round(cg*.6)},${Math.round(cb*.6)})`;
+  } else {
+    color = '#8b0000';
+  }
+  el.style.color = color;
+  el.style.fontWeight = v >= 30 ? '700' : '600';
+  el.className = v >= 30 ? 'fx-val vix-val-anim' : 'fx-val';
+}
+
+// ── INDICES ──
+async function loadIndices() {
+  try {
+    const res = await fetch(INDICES_URL + '&t=' + Date.now());
+    if (!res.ok) return;
+    const lines = (await res.text()).trim().split('\n');
+    const idMap = { VIX:'fx-vix', VSTOXX:'fx-vstoxx', VFTSE:'fx-vftse', VHSI:'fx-vhsi' };
+    lines.forEach(line => {
+      if (!line.trim()) return;
+      const cols = splitLine(line.replace(/\r/g,''));
+      if (cols.length < 3) return;
+      const ticker = (cols[1]||'').trim().toUpperCase();
+      const el = document.getElementById(idMap[ticker]);
+      if (!el) return;
+      const val = parseNum(cols[2]);
+      if (val != null) {
+        el.textContent = val.toFixed(2);
+        applyVolColor(el, val);
+      }
+    });
+  } catch(e) {
+    console.warn('Indices load error:', e);
+  }
+}
+
 // Auto-refresh
-setInterval(()=>{ loadSheet(true); loadFX(); }, REFRESH_MS);
+setInterval(()=>{ loadSheet(true); loadFX(); loadIndices(); }, REFRESH_MS);
 
 // ── STATS ──
 function updateStats(){
@@ -1276,11 +1298,11 @@ function adjustScrollTop() {
   if (barH > 0) document.getElementById('scroll').style.top = barH + 'px';
 }
 window.addEventListener('resize', adjustScrollTop);
-updateStats(); render(); loadSheet(true); loadFX();
+updateStats(); render(); loadSheet(true); loadFX(); loadIndices();
 setTimeout(adjustScrollTop, 50);
 setTimeout(adjustScrollTop, 300);
 </script>
 
-<div id="ver">myRadar v0.96</div>
+<div id="ver">myRadar v0.97</div>
 </body>
 </html>
