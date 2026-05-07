@@ -1297,9 +1297,8 @@ function adjustScrollTop() {
   if (barH > 0) document.getElementById('scroll').style.top = barH + 'px';
 }
 window.addEventListener('resize', adjustScrollTop);
+new ResizeObserver(adjustScrollTop).observe(document.getElementById('bar'));
 updateStats(); render(); loadSheet(true); loadFX(); loadIndices();
-setTimeout(adjustScrollTop, 50);
-setTimeout(adjustScrollTop, 300);
 </script>
 
 <div id="ver">myRadar v0.98</div>
