@@ -773,7 +773,7 @@ function updateStats(){
 }
 
 // ── SORT ──
-const TH={tick:1,price:3,target:4,upside:5,daychg:6,range52:7,flag:8};
+const TH={tick:2,price:4,target:5,upside:6,daychg:7,range52:8,flag:1};
 function sortBy(key){
   if(sortKey===key) sortDir*=-1;
   else{sortKey=key; sortDir=(key==='upside'||key==='flag')?-1:1;}
