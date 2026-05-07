@@ -517,6 +517,11 @@ td {
     <div class="fx-chip"><span class="fx-lbl">VSTOXX</span><span class="fx-val" id="fx-vstoxx">—</span></div>
     <div class="fx-chip"><span class="fx-lbl">VFTSE</span><span class="fx-val" id="fx-vftse">—</span></div>
     <div class="fx-chip"><span class="fx-lbl">VHSI</span><span class="fx-val" id="fx-vhsi">—</span></div>
+    <div class="fx-chip"><span class="fx-lbl">RVX</span><span class="fx-val" id="fx-rvx">—</span></div>
+    <div class="fx-chip"><span class="fx-lbl">VXD</span><span class="fx-val" id="fx-vxd">—</span></div>
+    <div class="fx-chip"><span class="fx-lbl">VXN</span><span class="fx-val" id="fx-vxn">—</span></div>
+    <div class="fx-chip"><span class="fx-lbl">VVIX</span><span class="fx-val" id="fx-vvix">—</span></div>
+    <div class="fx-chip"><span class="fx-lbl">VDAX</span><span class="fx-val" id="fx-vdax">—</span></div>
     <button class="fx-chip" id="btn-reload" onclick="manualReload()" title="Actualizar" style="cursor:pointer;border:none;background:var(--sur)">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--lbl)" stroke-width="2.2">
         <path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8"/>
@@ -752,7 +757,8 @@ async function loadIndices() {
     const res = await fetch(INDICES_URL + '&t=' + Date.now());
     if (!res.ok) return;
     const lines = (await res.text()).trim().split('\n');
-    const idMap = { VIX:'fx-vix', VSTOXX:'fx-vstoxx', VFTSE:'fx-vftse', VHSI:'fx-vhsi' };
+    const idMap = { VIX:'fx-vix', VSTOXX:'fx-vstoxx', VFTSE:'fx-vftse', VHSI:'fx-vhsi',
+                    RVX:'fx-rvx', VXD:'fx-vxd', VXN:'fx-vxn', VVIX:'fx-vvix', VDAX:'fx-vdax' };
     lines.forEach(line => {
       if (!line.trim()) return;
       const cols = splitLine(line.replace(/\r/g,''));
@@ -1301,6 +1307,6 @@ new ResizeObserver(adjustScrollTop).observe(document.getElementById('bar'));
 updateStats(); render(); loadSheet(true); loadFX(); loadIndices();
 </script>
 
-<div id="ver">myRadar v0.98</div>
+<div id="ver">myRadar v0.99</div>
 </body>
 </html>
