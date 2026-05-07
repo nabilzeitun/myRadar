@@ -569,7 +569,7 @@ let mktFilter='open'; // default: show only open markets
 function parseNum(s){
   if(!s) return null;
   s=s.trim().replace(/^"|"$/g,'');
-  if(!s||['#N/A','#REF!','#ERROR!','#VALUE!','#DIV/0!'].includes(s)) return null;
+  if(!s||['#N/A','#REF!','#ERROR!','#VALUE!','#DIV/0!','#NAME?','Cargando...'].includes(s)) return null;
   const hD=s.includes('.'), hC=s.includes(',');
   let n = hD&&hC ? s.replace(/\./g,'').replace(',','.') : hC ? s.replace(',','.') : s;
   const v=parseFloat(n); return isNaN(v)?null:v;
