@@ -230,6 +230,15 @@ html, body {
 /* VIX gradient — only number colored, chip stays normal */
 @keyframes vix-pg { 0%,100%{opacity:1} 50%{opacity:.45} }
 .vix-val-anim { animation: vix-pg 1.3s ease-in-out infinite; }
+.vol-mid {
+  background: rgba(241,196,15,.22); color: rgb(155,105,0);
+  border-radius: 5px; padding: 1px 6px; font-weight: 600;
+}
+.vol-high {
+  background: rgba(192,57,43,.22); color: #c0392b;
+  border-radius: 5px; padding: 1px 6px; font-weight: 700;
+  animation: vix-pg 1.3s ease-in-out infinite;
+}
 @keyframes ro { to { transform: rotate(360deg); } }
 #btn-reload.spinning svg { animation: ro .65s linear infinite; }
 
@@ -725,28 +734,16 @@ async function loadFX() {
 }
 
 // ── VOL COLOR ──
-function applyVolColor(el, v) {
-  let color;
-  if (v <= 15) {
-    color = '#1d6f42';
-  } else if (v <= 30) {
-    const t = (v - 15) / 15;
-    const cr = Math.round(29  + (241 - 29)  * t);
-    const cg = Math.round(111 + (196 - 111) * t);
-    const cb = Math.round(66  + (15  - 66)  * t);
-    color = `rgb(${Math.round(cr*.65)},${Math.round(cg*.65)},${Math.round(cb*.65)})`;
-  } else if (v <= 40) {
-    const t = (v - 30) / 10;
-    const cr = Math.round(241 + (192 - 241) * t);
-    const cg = Math.round(196 + (57  - 196) * t);
-    const cb = Math.round(15  + (43  - 15)  * t);
-    color = `rgb(${Math.round(cr*.6)},${Math.round(cg*.6)},${Math.round(cb*.6)})`;
+function applyVolColor(el, v, t1, t2) {
+  el.style.color = '';
+  el.style.fontWeight = '';
+  if (v >= t2) {
+    el.className = 'fx-val vol-high';
+  } else if (v >= t1) {
+    el.className = 'fx-val vol-mid';
   } else {
-    color = '#8b0000';
+    el.className = 'fx-val';
   }
-  el.style.color = color;
-  el.style.fontWeight = v >= 30 ? '700' : '600';
-  el.className = v >= 30 ? 'fx-val vix-val-anim' : 'fx-val';
 }
 
 // ── INDICES ──
@@ -764,9 +761,11 @@ async function loadIndices() {
       const el = document.getElementById(idMap[ticker]);
       if (!el) return;
       const val = parseNum(cols[2]);
+      const t1  = parseNum(cols[3]) ?? 30;
+      const t2  = parseNum(cols[4]) ?? 40;
       if (val != null) {
         el.textContent = val.toFixed(2);
-        applyVolColor(el, val);
+        applyVolColor(el, val, t1, t2);
       }
     });
   } catch(e) {
@@ -1303,6 +1302,6 @@ setTimeout(adjustScrollTop, 50);
 setTimeout(adjustScrollTop, 300);
 </script>
 
-<div id="ver">myRadar v0.97</div>
+<div id="ver">myRadar v0.98</div>
 </body>
 </html>
