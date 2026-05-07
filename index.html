@@ -772,6 +772,9 @@ async function loadIndices() {
       if (val != null) {
         el.textContent = val.toFixed(2);
         applyVolColor(el, val, t1, t2);
+      } else {
+        el.textContent = '–';
+        el.className = 'fx-val';
       }
     });
   } catch(e) {
