@@ -718,20 +718,23 @@ async function loadFX() {
       const key = cols[0].replace(/[^A-Za-z]/g,'').toUpperCase();
       if (!key) return;
       const val = parseNum(cols[1]);
-      const p20 = parseNum(cols[3]);
-      const p80 = parseNum(cols[4]);
-      if (val !== null) data[key] = { val, p20, p80 };
+      const p20 = parseNum(cols[2]);
+      const p80 = parseNum(cols[3]);
+      data[key] = { val, p20, p80 }; // siempre guardamos, aunque val sea null
     });
     const setFx = (id, key) => {
       const el = document.getElementById(id);
       if (!el) return;
       const d = data[key];
       if (!d) return;
-      el.textContent = d.val.toFixed(2);
+      if (d.val !== null) el.textContent = d.val.toFixed(2);
+      // si el CSV devuelve Cargando..., usamos el valor ya visible en el DOM
+      const v = d.val ?? parseFloat(el.textContent);
+      if (!v || isNaN(v)) return;
       el.className = 'fx-val';
       if (d.p20 != null && d.p80 != null) {
-        if (d.val >= d.p80)      el.className = 'fx-val fx-cheap';
-        else if (d.val <= d.p20) el.className = 'fx-val fx-dear';
+        if (v >= d.p80)      el.className = 'fx-val fx-cheap';
+        else if (v <= d.p20) el.className = 'fx-val fx-dear';
       }
     };
     setFx('fx-eurusd', 'EURUSD');
