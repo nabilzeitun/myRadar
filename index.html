@@ -728,13 +728,13 @@ async function loadFX() {
       const d = data[key];
       if (!d) return;
       if (d.val !== null) el.textContent = d.val.toFixed(2);
-      // si el CSV devuelve Cargando..., usamos el valor ya visible en el DOM
       const v = d.val ?? parseFloat(el.textContent);
       if (!v || isNaN(v)) return;
-      el.className = 'fx-val';
+      // solo actualizamos el color si tenemos umbrales válidos; si no, dejamos el color actual
       if (d.p20 != null && d.p80 != null) {
         if (v >= d.p80)      el.className = 'fx-val fx-cheap';
         else if (v <= d.p20) el.className = 'fx-val fx-dear';
+        else                  el.className = 'fx-val';
       }
     };
     setFx('fx-eurusd', 'EURUSD');
