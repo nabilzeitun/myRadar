@@ -242,7 +242,26 @@ html, body {
 .fx-cheap { background:rgba(39,174,96,.18); color:#1d6f42; border-radius:5px; padding:1px 6px; font-weight:600; }
 .fx-dear  { background:rgba(192,57,43,.18); color:#c0392b; border-radius:5px; padding:1px 6px; font-weight:600; }
 @keyframes ro { to { transform: rotate(360deg); } }
+
+/* ── INDEX TOAST ── */
+#idx-toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: var(--sur); border: 1px solid var(--brd2);
+  border-radius: 14px; padding: 11px 15px;
+  box-shadow: 0 6px 28px rgba(0,0,0,.14);
+  z-index: 500; min-width: 230px; max-width: 320px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+}
+#idx-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+.it-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.it-name   { font-size:12px; font-weight:700; color:var(--txt); }
+.it-row    { display:flex; justify-content:space-between; align-items:center;
+             font-size:10.5px; color:var(--txt3); margin-top:4px; }
+.it-row b  { color:var(--txt2); font-weight:500; font-family:var(--fnum); }
 #btn-reload.spinning svg { animation: ro .65s linear infinite; }
+.idx-chip { cursor: pointer; }
 
 
 /* ── SCROLL ── */
@@ -515,15 +534,15 @@ td {
     <div class="fx-chip"><span class="fx-lbl">EUR/GBP</span><span class="fx-val" id="fx-eurgbp">—</span></div>
     <div class="fx-chip"><span class="fx-lbl">EUR/HKD</span><span class="fx-val" id="fx-eurhkd">—</span></div>
     <div class="fx-chip"><span class="fx-lbl">EUR/AUD</span><span class="fx-val" id="fx-euraud">—</span></div>
-    <div class="fx-chip"><span class="fx-lbl">VIX</span><span class="fx-val" id="fx-vix">—</span></div>
-    <div class="fx-chip"><span class="fx-lbl">VSTOXX</span><span class="fx-val" id="fx-vstoxx">—</span></div>
-    <div class="fx-chip"><span class="fx-lbl">VFTSE</span><span class="fx-val" id="fx-vftse">—</span></div>
-    <div class="fx-chip"><span class="fx-lbl">VHSI</span><span class="fx-val" id="fx-vhsi">—</span></div>
-    <div class="fx-chip"><span class="fx-lbl">RVX</span><span class="fx-val" id="fx-rvx">—</span></div>
-    <div class="fx-chip"><span class="fx-lbl">VXD</span><span class="fx-val" id="fx-vxd">—</span></div>
-    <div class="fx-chip"><span class="fx-lbl">VXN</span><span class="fx-val" id="fx-vxn">—</span></div>
-    <div class="fx-chip"><span class="fx-lbl">VVIX</span><span class="fx-val" id="fx-vvix">—</span></div>
-    <div class="fx-chip"><span class="fx-lbl">VDAX</span><span class="fx-val" id="fx-vdax">—</span></div>
+    <div class="fx-chip idx-chip" data-idx="VIX"   ><span class="fx-lbl">VIX</span>   <span class="fx-val" id="fx-vix">—</span></div>
+    <div class="fx-chip idx-chip" data-idx="VSTOXX"><span class="fx-lbl">VSTOXX</span><span class="fx-val" id="fx-vstoxx">—</span></div>
+    <div class="fx-chip idx-chip" data-idx="VFTSE" ><span class="fx-lbl">VFTSE</span> <span class="fx-val" id="fx-vftse">—</span></div>
+    <div class="fx-chip idx-chip" data-idx="VHSI"  ><span class="fx-lbl">VHSI</span>  <span class="fx-val" id="fx-vhsi">—</span></div>
+    <div class="fx-chip idx-chip" data-idx="RVX"   ><span class="fx-lbl">RVX</span>   <span class="fx-val" id="fx-rvx">—</span></div>
+    <div class="fx-chip idx-chip" data-idx="VXD"   ><span class="fx-lbl">VXD</span>   <span class="fx-val" id="fx-vxd">—</span></div>
+    <div class="fx-chip idx-chip" data-idx="VXN"   ><span class="fx-lbl">VXN</span>   <span class="fx-val" id="fx-vxn">—</span></div>
+    <div class="fx-chip idx-chip" data-idx="VVIX"  ><span class="fx-lbl">VVIX</span>  <span class="fx-val" id="fx-vvix">—</span></div>
+    <div class="fx-chip idx-chip" data-idx="VDAX"  ><span class="fx-lbl">VDAX</span>  <span class="fx-val" id="fx-vdax">—</span></div>
     <button class="fx-chip" id="btn-reload" onclick="manualReload()" title="Actualizar" style="cursor:pointer;border:none;background:var(--sur)">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--lbl)" stroke-width="2.2">
         <path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8"/>
@@ -760,6 +779,7 @@ function applyVolColor(el, v, t1, t2) {
 }
 
 // ── INDICES ──
+const indicesData = {};
 async function loadIndices() {
   try {
     const res = await fetch(INDICES_URL + '&t=' + Date.now());
@@ -771,12 +791,16 @@ async function loadIndices() {
       if (!line.trim()) return;
       const cols = splitLine(line.replace(/\r/g,''));
       if (cols.length < 3) return;
+      const name   = (cols[0]||'').trim();
       const ticker = (cols[1]||'').trim().toUpperCase();
       const el = document.getElementById(idMap[ticker]);
       if (!el) return;
-      const val = parseNum(cols[2]);
-      const t1  = parseNum(cols[3]) ?? 30;
-      const t2  = parseNum(cols[4]) ?? 40;
+      const val      = parseNum(cols[2]);
+      const t1       = parseNum(cols[3]) ?? 30;
+      const t2       = parseNum(cols[4]) ?? 40;
+      const tsPrice  = (cols[5]||'').trim();
+      const tsThresh = (cols[6]||'').trim();
+      indicesData[ticker] = { name, val, t1, t2, tsPrice, tsThresh };
       if (val != null) {
         el.textContent = val.toFixed(2);
         applyVolColor(el, val, t1, t2);
@@ -785,10 +809,38 @@ async function loadIndices() {
         el.className = 'fx-val';
       }
     });
-  } catch(e) {
-    console.warn('Indices load error:', e);
-  }
+  } catch(e) { console.warn('Indices load error:', e); }
 }
+
+// ── INDEX TOAST ──
+let _toastTimer = null;
+function showIdxInfo(ticker) {
+  const d = indicesData[ticker];
+  if (!d) return;
+  document.getElementById('it-name').textContent = d.name || ticker;
+  const valEl = document.getElementById('it-val');
+  valEl.textContent = d.val != null ? d.val.toFixed(2) : '–';
+  valEl.className = 'fx-val';
+  if (d.val != null) applyVolColor(valEl, d.val, d.t1, d.t2);
+  document.getElementById('it-p20').textContent      = d.t1 != null ? d.t1.toFixed(2) : '–';
+  document.getElementById('it-p80').textContent      = d.t2 != null ? d.t2.toFixed(2) : '–';
+  document.getElementById('it-ts-price').textContent  = d.tsPrice  || '–';
+  document.getElementById('it-ts-thresh').textContent = d.tsThresh || '–';
+  const toast = document.getElementById('idx-toast');
+  toast.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => toast.classList.remove('show'), 5000);
+}
+document.querySelectorAll('.idx-chip').forEach(chip => {
+  chip.addEventListener('click', e => {
+    e.stopPropagation();
+    showIdxInfo(chip.dataset.idx);
+  });
+});
+document.addEventListener('click', () => {
+  clearTimeout(_toastTimer);
+  document.getElementById('idx-toast').classList.remove('show');
+});
 
 // Auto-refresh
 setInterval(()=>{ loadSheet(true); loadFX(); loadIndices(); }, REFRESH_MS);
@@ -1318,6 +1370,16 @@ new ResizeObserver(adjustScrollTop).observe(document.getElementById('bar'));
 updateStats(); render(); loadSheet(true); loadFX(); loadIndices();
 </script>
 
-<div id="ver">myRadar v0.99</div>
+<div id="ver">myRadar v1.00</div>
+
+<div id="idx-toast">
+  <div class="it-header">
+    <span class="it-name" id="it-name">–</span>
+    <span class="fx-val" id="it-val">–</span>
+  </div>
+  <div class="it-row"><span>Umbrales P20 / P80</span><b><span id="it-p20">–</span> / <span id="it-p80">–</span></b></div>
+  <div class="it-row"><span>Precio actualizado</span><b id="it-ts-price">–</b></div>
+  <div class="it-row"><span>Umbrales calculados</span><b id="it-ts-thresh">–</b></div>
+</div>
 </body>
 </html>
