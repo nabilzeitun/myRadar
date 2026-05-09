@@ -842,15 +842,25 @@ function showIdxInfo(ticker) {
   const t = document.getElementById('idx-toast');
   t.classList.remove('simple');
   t.classList.remove('card');
-  document.getElementById('it-name').textContent   = d.name   || ticker;
-  document.getElementById('it-market').textContent = d.market || '';
+  document.getElementById('it-name').textContent = d.name || ticker;
+  // Estado de volatilidad en el subtítulo
+  let idxStatus = '';
+  if (d.val != null && d.t1 != null && d.t2 != null) {
+    if      (d.val >= d.t2) idxStatus = `P${d.percHigh||'95'}% vol muy alta!`;
+    else if (d.val >= d.t1) idxStatus = `P${d.percLow ||'80'}% vol alta!`;
+  }
+  const mktStr = d.market || '';
+  document.getElementById('it-market').textContent = idxStatus
+    ? (mktStr ? `${mktStr} · ${idxStatus}` : idxStatus)
+    : mktStr;
   const valEl = document.getElementById('it-val');
+  valEl.style.display = ''; // resetear display oculto por showCard()
   valEl.textContent = d.val != null ? d.val.toFixed(2) : '–';
   valEl.className = 'fx-val';
   if (d.val != null) applyVolColor(valEl, d.val, d.t1, d.t2);
-  document.getElementById('it-perc-lbl').textContent = 'P' + (d.percLow||'80') + ' / P' + (d.percHigh||'95');
-  document.getElementById('it-p20').textContent      = d.t1 != null ? d.t1.toFixed(2) : '–';
-  document.getElementById('it-p80').textContent      = d.t2 != null ? d.t2.toFixed(2) : '–';
+  document.getElementById('it-perc-lbl').textContent  = 'P' + (d.percLow||'80') + ' / P' + (d.percHigh||'95');
+  document.getElementById('it-p20').textContent       = d.t1 != null ? d.t1.toFixed(2) : '–';
+  document.getElementById('it-p80').textContent       = d.t2 != null ? d.t2.toFixed(2) : '–';
   document.getElementById('it-ts-price').textContent  = d.tsPrice  || '–';
   document.getElementById('it-ts-thresh').textContent = d.tsThresh || '–';
   _ntShow();
@@ -868,9 +878,17 @@ function showFxInfo(key) {
   const t = document.getElementById('idx-toast');
   t.classList.remove('simple');
   t.classList.remove('card');
-  document.getElementById('it-name').textContent   = FX_LABELS[key] || key;
-  document.getElementById('it-market').textContent = '';
+  document.getElementById('it-name').textContent = FX_LABELS[key] || key;
+  // Estado del par en el subtítulo: moneda extranjera caro/barato
+  const foreignCur = key.slice(3); // "EURCHF" → "CHF"
+  let fxStatus = '';
+  if (d.val != null && d.pLow != null && d.pHigh != null) {
+    if      (d.val >= d.pHigh) fxStatus = `${foreignCur} barato`;
+    else if (d.val <= d.pLow)  fxStatus = `${foreignCur} caro`;
+  }
+  document.getElementById('it-market').textContent = fxStatus;
   const valEl = document.getElementById('it-val');
+  valEl.style.display = ''; // resetear display oculto por showCard()
   valEl.textContent = d.val != null ? d.val.toFixed(4) : '–';
   valEl.className = d.val != null && d.pLow != null && d.pHigh != null
     ? (d.val >= d.pHigh ? 'fx-val fx-cheap' : d.val <= d.pLow ? 'fx-val fx-dear' : 'fx-val')
