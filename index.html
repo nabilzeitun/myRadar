@@ -101,7 +101,7 @@ html, body {
 }
 .statbtn.active {
   background: #fff;
-  box-shadow: 0 0 0 1.5px #1d1d1f, 0 3px 8px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.1);
+  box-shadow: 0 0 0 1px #1d1d1f, 0 2px 6px rgba(0,0,0,.12);
 }
 .statbtn.active .stat-l { color: #3a3a3c; }
 .statbtn.active .stat-v { color: #1d1d1f; }
@@ -125,8 +125,7 @@ html, body {
 .mktbtn:hover { box-shadow: 0 2px 6px rgba(0,0,0,.15); }
 .mktbtn.on {
   background: #fff;
-  border: 1.5px solid #1d1d1f;
-  box-shadow: 0 3px 8px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.1);
+  box-shadow: 0 0 0 1px #1d1d1f, 0 2px 6px rgba(0,0,0,.12);
 }
 .mktbtn.on.markets-open {
   background: var(--sur);
@@ -226,8 +225,11 @@ html, body {
 #idx-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
 .it-header  { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px; gap:8px; }
 .it-titles  { display:flex; flex-direction:column; gap:1px; }
-.it-name    { font-size:12px; font-weight:700; color:var(--txt); line-height:1.3; }
+.it-name    { font-size:12px; font-weight:500; color:var(--txt); line-height:1.3; }
 .it-market  { font-size:10px; color:var(--lbl); line-height:1.3; }
+/* Modo card (filtros): centrado, sin filas de detalle */
+#idx-toast.card .it-header { justify-content:center; margin-bottom:0; }
+#idx-toast.card .it-titles { align-items:center; text-align:center; }
 .it-row     { display:flex; justify-content:space-between; align-items:center;
               font-size:10.5px; color:var(--txt3); margin-top:4px; }
 .it-row b   { color:var(--txt2); font-weight:500; font-family:var(--fnum); }
@@ -944,13 +946,13 @@ function filterCount(mode) {
 }
 
 function setFilter(mode){
-  const mktSub = mktFilter === 'open' ? 'mercados abiertos' : '';
+  const mktSfx = mktFilter === 'open' ? ' con mercados abiertos ahora' : '';
   const MSGS = {
-    'loaded':  n => `${n} empresas cargadas`,
-    'up':      n => `${n} empresas baratas`,
-    'dn':      n => `${n} empresas caras`,
-    'flag':    n => `${n} empresas destacadas`,
-    'up-flag': n => `${n} empresas baratas y destacadas`,
+    'loaded':  n => `${n} empresas cargadas${mktSfx}`,
+    'up':      n => `${n} empresas baratas${mktSfx}`,
+    'dn':      n => `${n} empresas caras${mktSfx}`,
+    'flag':    n => `${n} empresas destacadas${mktSfx}`,
+    'up-flag': n => `${n} empresas baratas y destacadas${mktSfx}`,
   };
   // Toggle off si ya está activo → mostrar todo
   if(filterMode===mode){
@@ -958,7 +960,7 @@ function setFilter(mode){
     ['loaded','up','dn','flag','up-flag'].forEach(f=>{
       const el=document.getElementById('f-'+f); if(el) el.classList.remove('active');
     });
-    showCard(`${filterCount('all')} empresas en myRadar`, mktSub, null);
+    showCard(`${filterCount('all')} empresas en myRadar${mktSfx}`, '', null);
     render();
     return;
   }
@@ -967,7 +969,7 @@ function setFilter(mode){
     const el=document.getElementById('f-'+f); if(el) el.classList.toggle('active',f===mode);
   });
   const n = filterCount(mode);
-  showCard((MSGS[mode]||(() => mode))(n), mktSub, null);
+  showCard((MSGS[mode]||(() => mode))(n), '', null);
   render();
 }
 
