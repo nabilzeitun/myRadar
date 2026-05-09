@@ -32,11 +32,7 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── BAR ── */
-/* ── BAR ──
-   Filosofía Bloomberg: fila 1 fija con filtros + controles.
-   Fila 2: todos los chips (índices + FX) en scroll horizontal.
-*/
+/* ── BAR — 3 filas, todas con scroll horizontal ── */
 #bar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 300;
   background: rgba(242,242,247,.94);
@@ -49,38 +45,21 @@ html, body {
   gap: 3px;
 }
 
-/* Fila 1: filtros + controles — distribuidos uniformemente, sin salto de línea */
-#br-controls {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  width: 100%;
-  min-height: 36px;
-}
-/* Los statbtn crecen para ocupar el espacio disponible */
-#br-controls .statbtn { flex: 1 1 0; min-width: 0; padding: 3px 2px; }
-
-/* Fila 2: chips con scroll horizontal — centrados si hay espacio, scroll si no */
-#br-chips {
+/* Fila genérica: centrada si cabe, scroll si no */
+.br-row {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   width: 100%;
 }
-#br-chips::-webkit-scrollbar { display: none; }
-#br-chips-inner {
+.br-row::-webkit-scrollbar { display: none; }
+.br-row-inner {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   min-width: 100%;
   justify-content: center;
   padding: 1px 0 2px;
-}
-/* separador entre índices y FX */
-.chips-sep {
-  width: 1px; height: 18px;
-  background: var(--brd2);
-  flex-shrink: 0;
 }
 
 /* ── STAT-FILTER CHIPS ── */
@@ -105,19 +84,20 @@ html, body {
   align-items: center; justify-content: center;
   gap: 1px;
   flex: 0 0 auto;
-  background: transparent;
+  background: var(--sur);
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 3px 8px;
   height: 36px;
   min-width: 44px;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
   transition: background .15s, border-color .15s, box-shadow .15s;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 .statbtn:hover {
-  background: rgba(0,0,0,.04);
+  background: rgba(0,0,0,.03);
 }
 .statbtn.active {
   background: #fff;
@@ -157,8 +137,8 @@ html, body {
 /* ── SEARCH ── */
 .search-wrap { position: relative; flex-shrink: 0; }
 .search-wrap svg {
-  position: absolute; left: 7px; top: 50%;
-  transform: translateY(-50%);
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
   color: var(--lbl); pointer-events: none;
   transition: opacity .15s;
 }
@@ -166,7 +146,7 @@ html, body {
 .search-wrap.active svg { opacity: 0; pointer-events: none; }
 .search-input {
   width: 44px;
-  background: rgba(118,118,128,.12);
+  background: var(--sur);
   border: none;
   border-radius: 10px;
   color: var(--txt);
@@ -174,12 +154,12 @@ html, body {
   font-size: 12px;
   padding: 6px 4px 6px 22px;
   outline: none;
-  transition: background .15s, padding .15s;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+  transition: background .15s, padding .15s, box-shadow .15s;
 }
 .search-input:focus,
 .search-input:not(:placeholder-shown) {
   padding: 6px 4px;
-  background: var(--sur);
 }
 .search-input:focus {
   box-shadow: 0 0 0 2px rgba(0,122,255,.2);
@@ -245,11 +225,23 @@ html, body {
   transition: opacity .18s ease, transform .18s ease;
 }
 #idx-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
-.it-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
-.it-name   { font-size:12px; font-weight:700; color:var(--txt); }
-.it-row    { display:flex; justify-content:space-between; align-items:center;
-             font-size:10.5px; color:var(--txt3); margin-top:4px; }
-.it-row b  { color:var(--txt2); font-weight:500; font-family:var(--fnum); }
+.it-header  { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px; gap:8px; }
+.it-titles  { display:flex; flex-direction:column; gap:1px; }
+.it-name    { font-size:12px; font-weight:700; color:var(--txt); line-height:1.3; }
+.it-market  { font-size:10px; color:var(--lbl); line-height:1.3; }
+.it-row     { display:flex; justify-content:space-between; align-items:center;
+              font-size:10.5px; color:var(--txt3); margin-top:4px; }
+.it-row b   { color:var(--txt2); font-weight:500; font-family:var(--fnum); }
+/* Modo card: header visible, sin filas de detalle (filtros, carga…) */
+#idx-toast.card .it-row { display: none; }
+/* Modo simple: solo texto, sin header (errores, fallback) */
+#idx-toast .it-msg {
+  display: none; font-size: 12.5px; font-weight: 500;
+  color: var(--txt2); text-align: center; padding: 4px 0 2px;
+}
+#idx-toast.simple .it-msg  { display: block; }
+#idx-toast.simple .it-header,
+#idx-toast.simple .it-row  { display: none; }
 #btn-reload.spinning svg { animation: ro .65s linear infinite; }
 .idx-chip { cursor: pointer; }
 .fx-tap   { cursor: pointer; }
@@ -258,7 +250,7 @@ html, body {
 /* ── SCROLL ── */
 #scroll {
   position: fixed;
-  top: 80px; left: 0; right: 0; bottom: 0;
+  top: 112px; left: 0; right: 0; bottom: 0;
   padding: 8px;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
@@ -399,24 +391,6 @@ td {
 }
 
 /* ── TOAST ── */
-#toast {
-  position: fixed; bottom: 44px; left: 50%;
-  transform: translateX(-50%) translateY(70px);
-  opacity: 0;
-  background: rgba(50,50,54,.95);
-  color: #fff;
-  padding: 8px 18px;
-  border-radius: 20px;
-  font-size: 13px; font-weight: 500;
-  z-index: 600; pointer-events: none;
-  backdrop-filter: blur(12px);
-  transition: transform .28s cubic-bezier(.34,1.56,.64,1), opacity .2s ease;
-  white-space: nowrap;
-}
-#toast.show {
-  transform: translateX(-50%) translateY(0);
-  opacity: 1;
-}
 
 #ver {
   position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
@@ -425,7 +399,9 @@ td {
   border-radius: 20px; padding: 3px 12px;
   pointer-events: none; z-index: 50;
   letter-spacing: .04em; white-space: nowrap;
+  transition: opacity .6s ease;
 }
+#ver.hidden { opacity: 0; }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-thumb { background: var(--brd2); border-radius: 2px; }
@@ -444,11 +420,12 @@ td {
   .stat-l { font-size: 8px; }
   .stat-v { font-size: 11px; }
   .mktbtn { width: 30px; height: 30px; }
-  .fx-chip { padding: 2px 5px; height: 30px; min-width: 32px; }
+  .fx-chip { padding: 2px 5px; height: 26px; min-width: 32px; }
   .fx-lbl { font-size: 7.5px; }
   .fx-val { font-size: 10px; }
   #last-upd { font-size: 9px; }
-  #bar { padding: 3px 8px; gap: 3px 4px; }
+  #bar { padding: 3px 4px 2px; gap: 2px; }
+  #scroll { top: 104px; }
 
   td { padding: 4px 6px; font-size: 11px; }
   thead th { padding: 5px 6px; font-size: 9px; }
@@ -473,78 +450,87 @@ td {
   .statbtn { padding: 1px 5px; height: 28px; min-width: 28px; }
   .stat-v { font-size: 10px; }
   .stat-l { font-size: 7px; }
+  #scroll { top: 98px; }
 }
 </style>
 </head>
 <body>
 
-<!-- BARRA DE CONTROL — Bloomberg style: controles fijos arriba, chips scroll abajo -->
+<!-- BARRA DE CONTROL — 3 filas con scroll horizontal -->
 <div id="bar">
 
-  <!-- Fila 1: lupa + filtros + ECG + actualizar -->
-  <div id="br-controls">
-    <div class="search-wrap">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-      </svg>
-      <input class="search-input" type="text" id="q" placeholder="" oninput="render()">
-    </div>
-    <button class="statbtn" id="f-loaded" onclick="setFilter('loaded')">
-      <span class="stat-l">Cargadas</span><span class="stat-v" id="s-ld">—</span>
-    </button>
-    <button class="statbtn active" id="f-up" onclick="setFilter('up')">
-      <span class="stat-l">Baratas</span><span class="stat-v up" id="s-up">—</span>
-    </button>
-    <button class="statbtn" id="f-dn" onclick="setFilter('dn')">
-      <span class="stat-l">Caras</span><span class="stat-v dn" id="s-dn">—</span>
-    </button>
-    <button class="statbtn" id="f-flag" onclick="setFilter('flag')">
-      <span class="stat-l">🔥</span><span class="stat-v" id="s-flag">—</span>
-    </button>
-    <button class="statbtn" id="f-up-flag" onclick="setFilter('up-flag')">
-      <span class="stat-l">🛒🔥</span><span class="stat-v" id="s-upflag">—</span>
-    </button>
-    <button class="mktbtn on" id="mf-open" onclick="toggleMktFilter()" title="Filtrar mercados abiertos">
-      <svg id="mkt-ecg" width="28" height="18" viewBox="0 0 28 18" fill="none" stroke-linecap="round" stroke-linejoin="round">
-        <defs>
-          <linearGradient id="area-g" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#1d6f42" stop-opacity="0.3"/>
-            <stop offset="100%" stop-color="#1d6f42" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <path id="mkt-area" d="M0,16 L4,12 L8,9 L12,11 L16,5 L20,3 L24,6 L28,1 L28,18 L0,18 Z" fill="url(#area-g)"/>
-        <polyline id="mkt-line" points="0,16 4,12 8,9 12,11 16,5 20,3 24,6 28,1" fill="none" stroke="#1d6f42" stroke-width="1.6"/>
-        <circle id="mkt-dot2" cx="28" cy="1" r="2.5" fill="#1d6f42"/>
-      </svg>
-    </button>
-    <button class="fx-chip" id="btn-reload" onclick="manualReload()" title="Actualizar" style="cursor:pointer;border:none;background:var(--sur);flex-shrink:0;">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--lbl)" stroke-width="2.2">
-        <path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8"/>
-        <path d="M21 3v5h-5"/>
-        <path d="M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16"/>
-        <path d="M8 16H3v5"/>
-      </svg>
-      <span class="fx-val" id="last-upd" style="font-size:9px">—</span>
-    </button>
-  </div>
-
-  <!-- Fila 2: índices + separador + FX, scroll horizontal -->
-  <div id="br-chips">
-    <div id="br-chips-inner">
+  <!-- Fila 1: índices de volatilidad -->
+  <div class="br-row" id="br-row1">
+    <div class="br-row-inner">
       <div class="fx-chip idx-chip" data-idx="VIX"   ><span class="fx-lbl">VIX</span>   <span class="fx-val" id="fx-vix">—</span></div>
+      <div class="fx-chip idx-chip" data-idx="VVIX"  ><span class="fx-lbl">VVIX</span>  <span class="fx-val" id="fx-vvix">—</span></div>
+      <div class="fx-chip idx-chip" data-idx="VXN"   ><span class="fx-lbl">VXN</span>   <span class="fx-val" id="fx-vxn">—</span></div>
+      <div class="fx-chip idx-chip" data-idx="VXD"   ><span class="fx-lbl">VXD</span>   <span class="fx-val" id="fx-vxd">—</span></div>
+      <div class="fx-chip idx-chip" data-idx="RVX"   ><span class="fx-lbl">RVX</span>   <span class="fx-val" id="fx-rvx">—</span></div>
+      <div class="fx-chip idx-chip" data-idx="VHSI"  ><span class="fx-lbl">VHSI</span>  <span class="fx-val" id="fx-vhsi">—</span></div>
       <div class="fx-chip idx-chip" data-idx="VSTOXX"><span class="fx-lbl">VSTOXX</span><span class="fx-val" id="fx-vstoxx">—</span></div>
       <div class="fx-chip idx-chip" data-idx="VFTSE" ><span class="fx-lbl">VFTSE</span> <span class="fx-val" id="fx-vftse">—</span></div>
-      <div class="fx-chip idx-chip" data-idx="VHSI"  ><span class="fx-lbl">VHSI</span>  <span class="fx-val" id="fx-vhsi">—</span></div>
-      <div class="fx-chip idx-chip" data-idx="RVX"   ><span class="fx-lbl">RVX</span>   <span class="fx-val" id="fx-rvx">—</span></div>
-      <div class="fx-chip idx-chip" data-idx="VXD"   ><span class="fx-lbl">VXD</span>   <span class="fx-val" id="fx-vxd">—</span></div>
-      <div class="fx-chip idx-chip" data-idx="VXN"   ><span class="fx-lbl">VXN</span>   <span class="fx-val" id="fx-vxn">—</span></div>
-      <div class="fx-chip idx-chip" data-idx="VVIX"  ><span class="fx-lbl">VVIX</span>  <span class="fx-val" id="fx-vvix">—</span></div>
       <div class="fx-chip idx-chip" data-idx="VDAX"  ><span class="fx-lbl">VDAX</span>  <span class="fx-val" id="fx-vdax">—</span></div>
-      <div class="chips-sep"></div>
+    </div>
+  </div>
+
+  <!-- Fila 2: divisas + actualizar -->
+  <div class="br-row" id="br-row2">
+    <div class="br-row-inner">
       <div class="fx-chip fx-tap" data-fx="EURUSD"><span class="fx-lbl">EUR/USD</span><span class="fx-val" id="fx-eurusd">—</span></div>
       <div class="fx-chip fx-tap" data-fx="EURGBP"><span class="fx-lbl">EUR/GBP</span><span class="fx-val" id="fx-eurgbp">—</span></div>
       <div class="fx-chip fx-tap" data-fx="EURHKD"><span class="fx-lbl">EUR/HKD</span><span class="fx-val" id="fx-eurhkd">—</span></div>
       <div class="fx-chip fx-tap" data-fx="EURAUD"><span class="fx-lbl">EUR/AUD</span><span class="fx-val" id="fx-euraud">—</span></div>
+      <div class="fx-chip fx-tap" data-fx="EURCHF"><span class="fx-lbl">EUR/CHF</span><span class="fx-val" id="fx-eurchf">—</span></div>
+      <button class="fx-chip" id="btn-reload" onclick="manualReload()" title="Actualizar" style="cursor:pointer;border:none;background:var(--sur);flex-shrink:0;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--lbl)" stroke-width="2.2">
+          <path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8"/>
+          <path d="M21 3v5h-5"/>
+          <path d="M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16"/>
+          <path d="M8 16H3v5"/>
+        </svg>
+        <span class="fx-val" id="last-upd" style="font-size:9px">—</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Fila 3: lupa + filtros -->
+  <div class="br-row" id="br-row3">
+    <div class="br-row-inner">
+      <div class="search-wrap">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input class="search-input" type="text" id="q" placeholder="" oninput="render()">
+      </div>
+      <button class="statbtn" id="f-loaded" onclick="setFilter('loaded')">
+        <span class="stat-l">Cargadas</span><span class="stat-v" id="s-ld">—</span>
+      </button>
+      <button class="statbtn active" id="f-up" onclick="setFilter('up')">
+        <span class="stat-l">Baratas</span><span class="stat-v up" id="s-up">—</span>
+      </button>
+      <button class="statbtn" id="f-dn" onclick="setFilter('dn')">
+        <span class="stat-l">Caras</span><span class="stat-v dn" id="s-dn">—</span>
+      </button>
+      <button class="statbtn" id="f-flag" onclick="setFilter('flag')">
+        <span class="stat-l">🔥</span><span class="stat-v" id="s-flag">—</span>
+      </button>
+      <button class="statbtn" id="f-up-flag" onclick="setFilter('up-flag')">
+        <span class="stat-l">🛒</span><span class="stat-v" id="s-upflag">—</span>
+      </button>
+      <button class="mktbtn on" id="mf-open" onclick="toggleMktFilter()" title="Filtrar mercados abiertos">
+        <svg id="mkt-ecg" width="28" height="18" viewBox="0 0 28 18" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <defs>
+            <linearGradient id="area-g" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1d6f42" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#1d6f42" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path id="mkt-area" d="M0,16 L4,12 L8,9 L12,11 L16,5 L20,3 L24,6 L28,1 L28,18 L0,18 Z" fill="url(#area-g)"/>
+          <polyline id="mkt-line" points="0,16 4,12 8,9 12,11 16,5 20,3 24,6 28,1" fill="none" stroke="#1d6f42" stroke-width="1.6"/>
+          <circle id="mkt-dot2" cx="28" cy="1" r="2.5" fill="#1d6f42"/>
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -555,7 +541,6 @@ td {
   <table>
     <thead>
       <tr>
-        <th class="ci"></th>
         <th class="cfl" onclick="sortBy('flag')"></th>
         <th class="l" onclick="sortBy('tick')">Ticker</th>
         <th class="l col-empresa">Empresa</th>
@@ -569,8 +554,6 @@ td {
     <tbody id="tbody"></tbody>
   </table>
 </div>
-
-<div id="toast"></div>
 
 <script>
 const CSV_URL     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhCXI4uXagUPUSv-QomsWuEoCDHlFlxzrFTXSgi9aQ8Oy1sEacerfIdKxPGZdm1VJw-P1PzNQH5Q3_/pub?gid=0&single=true&output=csv';
@@ -709,7 +692,7 @@ async function loadSheet(silent=false){
     const now=new Date();
     document.getElementById('last-upd').textContent=now.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     updateStats(); render();
-    if(!silent) toast(rows.length+' posiciones en myRadar');
+    if(!silent) showCard('myRadar', 'actualizado', rows.length);
   }catch(e){
     if(!silent) toast('Error: '+e.message);
   }
@@ -720,7 +703,7 @@ async function loadSheet(silent=false){
 function manualReload(){ loadSheet(false); loadFX(); loadIndices(); }
 
 const fxData = {};
-const FX_LABELS = { EURUSD:'EUR/USD', EURGBP:'EUR/GBP', EURHKD:'EUR/HKD', EURAUD:'EUR/AUD' };
+const FX_LABELS = { EURUSD:'EUR/USD', EURGBP:'EUR/GBP', EURHKD:'EUR/HKD', EURAUD:'EUR/AUD', EURCHF:'EUR/CHF' };
 
 async function loadFX() {
   try {
@@ -764,6 +747,7 @@ async function loadFX() {
     setFx('fx-eurgbp', 'EURGBP');
     setFx('fx-eurhkd', 'EURHKD');
     setFx('fx-euraud', 'EURAUD');
+    setFx('fx-eurchf', 'EURCHF');
   } catch(e) {
     console.warn('FX load error:', e);
   }
@@ -795,18 +779,21 @@ async function loadIndices() {
       if (!line.trim()) return;
       const cols = splitLine(line.replace(/\r/g,''));
       if (cols.length < 3) return;
-      const name   = (cols[0]||'').trim();
-      const ticker = (cols[1]||'').trim().toUpperCase();
+      // Columnas: [0]NOMBRE [1]MERCADO [2]TICKER [3]VALOR [4]UMBRAL_LOW [5]UMBRAL_HIGH
+      //           [6]TS_PRECIO [7]TS_UMBRAL [8]PERC_LOW [9]PERC_HIGH
+      const name     = (cols[0]||'').trim();
+      const market   = (cols[1]||'').trim();
+      const ticker   = (cols[2]||'').trim().toUpperCase();
       const el = document.getElementById(idMap[ticker]);
       if (!el) return;
-      const val      = parseNum(cols[2]);
-      const t1       = parseNum(cols[3]) ?? 30;
-      const t2       = parseNum(cols[4]) ?? 40;
-      const tsPrice  = (cols[5]||'').trim();
-      const tsThresh = (cols[6]||'').trim();
-      const percLow  = (cols[7]||'').trim() || '80';
-      const percHigh = (cols[8]||'').trim() || '95';
-      indicesData[ticker] = { name, val, t1, t2, tsPrice, tsThresh, percLow, percHigh };
+      const val      = parseNum(cols[3]);
+      const t1       = parseNum(cols[4]) ?? 30;
+      const t2       = parseNum(cols[5]) ?? 40;
+      const tsPrice  = (cols[6]||'').trim();
+      const tsThresh = (cols[7]||'').trim();
+      const percLow  = (cols[8]||'').trim() || '80';
+      const percHigh = (cols[9]||'').trim() || '95';
+      indicesData[ticker] = { name, market, val, t1, t2, tsPrice, tsThresh, percLow, percHigh };
       if (val != null) {
         const newText  = val.toFixed(2);
         const newClass = val >= t2 ? 'fx-val vol-high'
@@ -820,12 +807,43 @@ async function loadIndices() {
   } catch(e) { console.warn('Indices load error:', e); }
 }
 
-// ── INDEX TOAST ──
+// ── NOTIFICACIONES — sistema unificado ──
 let _toastTimer = null;
+
+function _ntShow() {
+  const t = document.getElementById('idx-toast');
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 5000);
+}
+
+// Card compacto: header (nombre + subtítulo + valor opcional), sin filas de detalle
+function showCard(name, sub, val) {
+  const t = document.getElementById('idx-toast');
+  t.classList.remove('simple');
+  t.classList.add('card');
+  document.getElementById('it-name').textContent   = name || '';
+  document.getElementById('it-market').textContent = sub  || '';
+  const valEl = document.getElementById('it-val');
+  if (val != null) {
+    valEl.textContent = String(val);
+    valEl.style.display = '';
+  } else {
+    valEl.textContent = '';
+    valEl.style.display = 'none';
+  }
+  valEl.className = 'fx-val';
+  _ntShow();
+}
+
 function showIdxInfo(ticker) {
   const d = indicesData[ticker];
   if (!d) return;
-  document.getElementById('it-name').textContent = d.name || ticker;
+  const t = document.getElementById('idx-toast');
+  t.classList.remove('simple');
+  t.classList.remove('card');
+  document.getElementById('it-name').textContent   = d.name   || ticker;
+  document.getElementById('it-market').textContent = d.market || '';
   const valEl = document.getElementById('it-val');
   valEl.textContent = d.val != null ? d.val.toFixed(2) : '–';
   valEl.className = 'fx-val';
@@ -835,10 +853,7 @@ function showIdxInfo(ticker) {
   document.getElementById('it-p80').textContent      = d.t2 != null ? d.t2.toFixed(2) : '–';
   document.getElementById('it-ts-price').textContent  = d.tsPrice  || '–';
   document.getElementById('it-ts-thresh').textContent = d.tsThresh || '–';
-  const toast = document.getElementById('idx-toast');
-  toast.classList.add('show');
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => toast.classList.remove('show'), 5000);
+  _ntShow();
 }
 document.querySelectorAll('.idx-chip').forEach(chip => {
   chip.addEventListener('click', e => {
@@ -847,11 +862,14 @@ document.querySelectorAll('.idx-chip').forEach(chip => {
   });
 });
 
-// ── FX TOAST ──
 function showFxInfo(key) {
   const d = fxData[key];
   if (!d) return;
-  document.getElementById('it-name').textContent = FX_LABELS[key] || key;
+  const t = document.getElementById('idx-toast');
+  t.classList.remove('simple');
+  t.classList.remove('card');
+  document.getElementById('it-name').textContent   = FX_LABELS[key] || key;
+  document.getElementById('it-market').textContent = '';
   const valEl = document.getElementById('it-val');
   valEl.textContent = d.val != null ? d.val.toFixed(4) : '–';
   valEl.className = d.val != null && d.pLow != null && d.pHigh != null
@@ -862,10 +880,7 @@ function showFxInfo(key) {
   document.getElementById('it-p80').textContent       = d.pHigh != null ? d.pHigh.toFixed(4) : '–';
   document.getElementById('it-ts-price').textContent  = d.tsPrice  || '–';
   document.getElementById('it-ts-thresh').textContent = d.tsThresh || '–';
-  const t = document.getElementById('idx-toast');
-  t.classList.add('show');
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => t.classList.remove('show'), 5000);
+  _ntShow();
 }
 document.querySelectorAll('.fx-tap').forEach(chip => {
   chip.addEventListener('click', e => {
@@ -874,7 +889,8 @@ document.querySelectorAll('.fx-tap').forEach(chip => {
   });
 });
 
-document.addEventListener('click', () => {
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#bar')) return; // clicks en la barra abren/actualizan el toast
   clearTimeout(_toastTimer);
   document.getElementById('idx-toast').classList.remove('show');
 });
@@ -911,33 +927,34 @@ function sortBy(key){
 }
 
 // ── FILTER ──
-function filterMsg(mode){
-  const total   = rows.length;
-  const loaded  = rows.filter(r=>r.price!=null).length;
-  const baratas = rows.filter(r=>r.price!=null&&upside(r)>0).length;
-  const caras   = rows.filter(r=>r.price!=null&&upside(r)!=null&&upside(r)<=0).length;
-  const dest    = rows.filter(r=>r.flag).length;
-  const destBar = rows.filter(r=>r.flag&&r.price!=null&&upside(r)>0).length;
-  const mkt     = mktFilter==='open' ? ' y con mercado abierto' : '';
-  const msgs = {
-    'all':     `${total} empresas en myRadar${mkt}`,
-    'loaded':  `${loaded} empresas con precios${mkt}`,
-    'up':      `${baratas} empresas baratas${mkt}`,
-    'dn':      `${caras} empresas caras${mkt}`,
-    'flag':    `${dest} empresas destacadas${mkt}`,
-    'up-flag': `${destBar} empresas destacadas y baratas, ¡a comprar!${mkt ? ' y con mercado abierto' : ''}`,
-  };
-  return msgs[mode] || '';
+function filterCount(mode) {
+  switch(mode) {
+    case 'all':     return rows.length;
+    case 'loaded':  return rows.filter(r=>r.price!=null).length;
+    case 'up':      return rows.filter(r=>r.price!=null&&upside(r)>0).length;
+    case 'dn':      return rows.filter(r=>r.price!=null&&upside(r)!=null&&upside(r)<=0).length;
+    case 'flag':    return rows.filter(r=>r.flag).length;
+    case 'up-flag': return rows.filter(r=>r.flag&&r.price!=null&&upside(r)>0).length;
+    default: return null;
+  }
 }
 
 function setFilter(mode){
+  const mktSub = mktFilter==='open' ? 'mercado abierto' : '';
+  const MSGS = {
+    'loaded':  n => `${n} empresas cargadas`,
+    'up':      n => `${n} empresas baratas`,
+    'dn':      n => `${n} empresas caras`,
+    'flag':    n => `${n} empresas destacadas`,
+    'up-flag': n => `${n} empresas baratas y destacadas`,
+  };
   // Toggle off if already active → show all
-  if(filterMode===mode){ 
+  if(filterMode===mode){
     filterMode='all';
     ['loaded','up','dn','flag','up-flag'].forEach(f=>{
       const el=document.getElementById('f-'+f); if(el) el.classList.remove('active');
     });
-    toast(rows.length+' empresas en myRadar');
+    showCard(`${rows.length} empresas en myRadar`, mktSub, null);
     render();
     return;
   }
@@ -945,8 +962,9 @@ function setFilter(mode){
   ['loaded','up','dn','flag','up-flag'].forEach(f=>{
     const el=document.getElementById('f-'+f); if(el) el.classList.toggle('active',f===mode);
   });
-  const msg = filterMsg(mode);
-  if(msg) toast(msg);
+  const n = filterCount(mode);
+  const sub = mode==='up-flag' ? '¡A comprar!' + (mktSub ? ' · '+mktSub : '') : mktSub;
+  showCard((MSGS[mode]||(() => mode))(n), sub, null);
   render();
 }
 
@@ -954,8 +972,7 @@ function toggleMktFilter(){
   mktFilter = mktFilter==='open' ? null : 'open';
   document.getElementById('mf-open').className='mktbtn'+(mktFilter?' on':'');
   updateMktDot();
-  const mktMsg = filterMsg(filterMode);
-  toast(mktMsg || (mktFilter ? 'Mercados abiertos' : 'Todos los mercados'));
+  showCard(mktFilter==='open' ? 'Filtrando por mercados abiertos' : 'Todos los mercados', '', null);
   render();
 }
 
@@ -1212,140 +1229,133 @@ function render(){
   const tbody=document.getElementById('tbody');
   if(!list.length){
     if(mktFilter==='open' && rows.length>0 && rows.every(r=>!isMarketOpen(r.mkt))){
-      const mktSet=[...new Set(rows.map(r=>r.mkt))].sort();
-      // Convert market open/close to user's local time dynamically
-      // Market definitions: [displayName, timezone, openH, openM, closeH, closeM, utcOffset]
+      const mktSet = [...new Set(rows.map(r=>r.mkt))];
+
+      // exchange = nombre del mercado (izquierda), city = ciudad (derecha)
+      // Orden este→oeste. ETR y FRA agrupados (Frankfurt).
       const MKT_DEF = {
-        'NYSE':   ['NYSE / NASDAQ','America/New_York', 9,30,16,0,'UTC−5/−4'],
-        'NASDAQ': ['NYSE / NASDAQ','America/New_York', 9,30,16,0,'UTC−5/−4'],
-        'OTC':    ['NYSE / NASDAQ','America/New_York', 9,30,16,0,'UTC−5/−4'],
-        'BME':    ['BME (Madrid)','Europe/Madrid',     9,0,17,30,'UTC+1/+2'],
-        'LON':    ['LON (Londres)','Europe/London',    8,0,16,30,'UTC+0/+1'],
-        'EPA':    ['EPA (París)','Europe/Paris',       9,0,17,30,'UTC+1/+2'],
-        'ETR':    ['ETR (Fráncfort)','Europe/Berlin',  9,0,17,30,'UTC+1/+2'],
-        'AMS':    ['AMS (Ámsterdam)','Europe/Amsterdam',9,0,17,30,'UTC+1/+2'],
-        'BIT':    ['BIT (Milán)','Europe/Rome',        9,0,17,30,'UTC+1/+2'],
-        'VIE':    ['VIE (Viena)','Europe/Vienna',      9,0,17,30,'UTC+1/+2'],
-        'FRA':    ['FRA (Fráncfort)','Europe/Berlin',  9,0,17,30,'UTC+1/+2'],
-        'SWX':    ['SWX (Zúrich)','Europe/Zurich',     9,0,17,30,'UTC+1/+2'],
-        'HKG':    ['HKG (Hong Kong)','Asia/Hong_Kong', 9,30,16,0,'UTC+8'],
-        'ASX':    ['ASX (Sídney)','Australia/Sydney', 10,0,16,0,'UTC+10/+11'],
+        'ASX':    { exchange:'ASX',     city:'Sídney',      tz:'Australia/Sydney',    o:[10,0], c:[16,0],  order:1  },
+        'HKG':    { exchange:'HKEX',    city:'Hong Kong',   tz:'Asia/Hong_Kong',      o:[9,30], c:[16,0],  order:2  },
+        'ETR':    { exchange:'ETR/FRA', city:'Fráncfort',   tz:'Europe/Berlin',       o:[9,0],  c:[17,30], order:3  },
+        'FRA':    { exchange:'ETR/FRA', city:'Fráncfort',   tz:'Europe/Berlin',       o:[9,0],  c:[17,30], order:3  },
+        'AMS':    { exchange:'AMS',     city:'Ámsterdam',   tz:'Europe/Amsterdam',    o:[9,0],  c:[17,30], order:4  },
+        'BIT':    { exchange:'BIT',     city:'Milán',       tz:'Europe/Rome',         o:[9,0],  c:[17,30], order:5  },
+        'VIE':    { exchange:'VIE',     city:'Viena',       tz:'Europe/Vienna',       o:[9,0],  c:[17,30], order:6  },
+        'SWX':    { exchange:'SWX',     city:'Zúrich',      tz:'Europe/Zurich',       o:[9,0],  c:[17,30], order:7  },
+        'EPA':    { exchange:'EPA',     city:'París',       tz:'Europe/Paris',        o:[9,0],  c:[17,30], order:8  },
+        'BME':    { exchange:'BME',     city:'Madrid',      tz:'Europe/Madrid',       o:[9,0],  c:[17,30], order:9  },
+        'LON':    { exchange:'LON',     city:'Londres',     tz:'Europe/London',       o:[8,0],  c:[16,30], order:10 },
+        'NYSE':   { exchange:'NYSE/NASDAQ', city:'Nueva York',  tz:'America/New_York',    o:[9,30], c:[16,0],  order:11 },
+        'NASDAQ': { exchange:'NYSE/NASDAQ', city:'Nueva York',  tz:'America/New_York',    o:[9,30], c:[16,0],  order:11 },
+        'OTC':    { exchange:'NYSE/NASDAQ', city:'Nueva York',  tz:'America/New_York',    o:[9,30], c:[16,0],  order:11 },
+        'US':     { exchange:'NYSE/NASDAQ', city:'Nueva York',  tz:'America/New_York',    o:[9,30], c:[16,0],  order:11 },
       };
 
-      // Convert a market time (in its tz) to user local time string
-      const toLocal = (tz, h, m) => {
-        // Create a date with that time in the market's timezone using today's date
-        const ref = new Date();
-        // Use Intl to find the offset between market tz and UTC
-        const mktParts = new Intl.DateTimeFormat('en-US',{
-          timeZone:tz, hour:'numeric', minute:'numeric',
-          hour12:false, year:'numeric', month:'numeric', day:'numeric'
-        }).formatToParts(ref);
-        const get = t => parseInt(mktParts.find(p=>p.type===t)?.value||0);
-        // Build a UTC date that represents today at h:m in market tz
-        const mktNow = new Date(ref);
-        mktNow.setFullYear(get('year'), get('month')-1, get('day'));
-        // Get offset: diff between UTC and market local
-        const utcMs = ref.getTime();
-        const mktMs = new Date(new Intl.DateTimeFormat('en-US',{
-          timeZone:tz, hour12:false,
-          year:'numeric',month:'2-digit',day:'2-digit',
-          hour:'2-digit',minute:'2-digit',second:'2-digit'
-        }).format(ref)).getTime();
-        // Use a known reference approach: create a date at market open time
-        const marketDate = new Date(ref);
-        // Set to market open using the timezone offset trick
-        const localOffset = ref.getTimezoneOffset(); // in minutes, negative for east
-        const mktStr = `${get('year')}-${String(get('month')).padStart(2,'0')}-${String(get('day')).padStart(2,'0')}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`;
-        // Parse as if in market tz, then format in user local tz
-        const tempDate = new Date(mktStr + 'Z'); // treat as UTC first
-        // Get the market's UTC offset at that time
-        const mktFormatter = new Intl.DateTimeFormat('en-US',{timeZone:tz,hour:'numeric',minute:'numeric',hour12:false});
-        // Correct approach: find UTC time that equals h:m in market tz
-        // Binary search alternative: use known date math
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        // Create date at h:m in market tz by iterating through UTC hours
-        // Simple approach: create date string and parse
-        const dateStr = today.toISOString().split('T')[0];
-        const utcDate = new Date(`${dateStr}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00Z`);
-        // Get what time this UTC moment corresponds to in market tz
-        const mktTimeAtUTC = new Intl.DateTimeFormat('en-US',{
-          timeZone:tz, hour:'numeric', minute:'numeric', hour12:false
-        }).format(utcDate);
-        // We need the inverse: what UTC time = h:m in market tz
-        // Use Intl offset detection
-        const refForOffset = new Date(`${dateStr}T12:00:00Z`); // noon UTC
-        const mktNoonStr = new Intl.DateTimeFormat('en-US',{
-          timeZone:tz, hour:'numeric', minute:'numeric', hour12:false
-        }).formatToParts(refForOffset);
-        const mktNoonH = parseInt(mktNoonStr.find(p=>p.type==='hour')?.value||12);
-        const mktNoonM = parseInt(mktNoonStr.find(p=>p.type==='minute')?.value||0);
-        const mktOffsetMin = (12*60) - (mktNoonH*60 + mktNoonM); // UTC - mktLocal
-        // UTC time of market open = market local time + offset
-        const utcOpenMs  = (h*60+m + mktOffsetMin) * 60000;
-        const utcCloseMs = (h*60+m + mktOffsetMin) * 60000; // placeholder
-        // Convert to user local
-        const userDate = new Date(today.getTime() + utcOpenMs);
-        const userH = userDate.getHours();
-        const userM = userDate.getMinutes();
-        return String(userH).padStart(2,'0') + ':' + String(userM).padStart(2,'0');
-      };
-
-      // Simpler, reliable approach using Intl offset
-      const mktToLocal = (tz, oh, om, ch, cm) => {
-        const today = new Date();
-        const dateStr = today.toISOString().split('T')[0];
-        // Detect market UTC offset at noon today
+      // Convierte hora de mercado local → minutos desde medianoche en hora del usuario
+      const mktToLocalMin = (tz, h, m) => {
+        const dateStr = new Date().toISOString().split('T')[0];
         const noon = new Date(`${dateStr}T12:00:00Z`);
         const parts = new Intl.DateTimeFormat('en-US',{
           timeZone:tz, hour:'numeric', minute:'numeric', hour12:false
         }).formatToParts(noon);
         const mktH = parseInt(parts.find(p=>p.type==='hour')?.value||12);
         const mktM = parseInt(parts.find(p=>p.type==='minute')?.value||0);
-        const offsetMin = 12*60 - (mktH*60+mktM); // minutes: UTC = local + offset
-        // Convert open/close from market local to UTC then to user local
-        const toUser = (h,m) => {
-          const utcMs = (h*60+m+offsetMin)*60000;
-          const d = new Date(new Date(`${dateStr}T00:00:00Z`).getTime() + utcMs);
-          return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-        };
-        return [toUser(oh,om), toUser(ch,cm)];
+        const offsetMin = 12*60 - (mktH*60+mktM);
+        const utcMs = (h*60+m+offsetMin)*60000;
+        const d = new Date(new Date(`${dateStr}T00:00:00Z`).getTime() + utcMs);
+        return d.getHours()*60 + d.getMinutes();
       };
 
-      const seen=new Set();
-      const rows2=mktSet.map(m=>{
-        const def=MKT_DEF[m];
-        if(!def||seen.has(def[0])) return null;
-        seen.add(def[0]);
-        const [name,tz,oh,om,ch,cm,utcLbl]=def;
-        const [localOpen, localClose] = mktToLocal(tz,oh,om,ch,cm);
-        return [name, `${localOpen}–${localClose}`, `(${utcLbl})`];
-      }).filter(Boolean);
-      // Hide thead while showing closed message
+      const fmtMin = min => {
+        const h = Math.floor(((min%1440)+1440)%1440/60);
+        const m = min%60;
+        return `${h}:${String(m).padStart(2,'0')}`;
+      };
+
+      // Lista deduplicada y ordenada E→O
+      const seen = new Set();
+      const markets = mktSet
+        .filter(m => MKT_DEF[m])
+        .sort((a,b) => (MKT_DEF[a].order||99) - (MKT_DEF[b].order||99))
+        .reduce((acc, m) => {
+          const def = MKT_DEF[m];
+          if (seen.has(def.exchange)) return acc;
+          seen.add(def.exchange);
+          const openMin  = mktToLocalMin(def.tz, def.o[0], def.o[1]);
+          const closeMin = mktToLocalMin(def.tz, def.c[0], def.c[1]);
+          acc.push({ exchange: def.exchange, city: def.city, openMin, closeMin });
+          return acc;
+        }, []);
+
+      // ── SVG timeline ──
+      const nowMin = new Date().getHours()*60 + new Date().getMinutes();
+      const nowLbl = `${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2,'0')}`;
+      const SVG_W = 380, LBL_W = 56, CITY_W = 68;
+      const CHART_W = SVG_W - LBL_W - CITY_W;
+      const ROW_H = 26, HDR_H = 28;
+      const SVG_H = HDR_H + markets.length * ROW_H + 8;
+      const cx = min => LBL_W + min / 1440 * CHART_W;
+      const nowX = cx(nowMin);
+
+      // Barras por mercado (NYSE/NASDAQ en dos líneas)
+      const bars = markets.map((m, i) => {
+        const y   = HDR_H + i * ROW_H + (ROW_H - 10) / 2;
+        const mid = y + 5; // centro vertical de la barra
+        const ox = cx(m.openMin), cxE = cx(m.closeMin);
+        const normal = m.closeMin > m.openMin;
+        const barSvg = normal
+          ? `<rect x="${ox.toFixed(1)}" y="${y}" width="${(cxE-ox).toFixed(1)}" height="10" rx="3" fill="#0071e3" opacity=".65"/>`
+          : `<rect x="${ox.toFixed(1)}" y="${y}" width="${(LBL_W+CHART_W-ox).toFixed(1)}" height="10" rx="3" fill="#0071e3" opacity=".65"/>
+             <rect x="${LBL_W}" y="${y}" width="${(cxE-LBL_W).toFixed(1)}" height="10" rx="3" fill="#0071e3" opacity=".65"/>`;
+        const parts = m.exchange.split('/');
+        const nameText = parts.length > 1
+          ? `<text x="${LBL_W-5}" y="${mid}" font-size="9" fill="#3a3a3c" font-weight="600" text-anchor="end">${parts[0]}</text>
+             <text x="${LBL_W-5}" y="${mid+11}" font-size="9" fill="#3a3a3c" font-weight="600" text-anchor="end">${parts[1]}</text>`
+          : `<text x="${LBL_W-5}" y="${mid+4}" font-size="10" fill="#3a3a3c" font-weight="600" text-anchor="end">${m.exchange}</text>`;
+        return `
+          ${nameText}
+          <rect x="${LBL_W}" y="${y}" width="${CHART_W}" height="10" rx="3" fill="rgba(0,0,0,.06)"/>
+          ${barSvg}
+          <text x="${LBL_W+CHART_W+5}" y="${mid+4}" font-size="10" fill="#636366">${m.city}</text>`;
+      }).join('');
+
+      // Eje: líneas cada 6h etiquetadas + medias horas de apertura discontinuas
+      const majorTicks = [0,6,12,18,24].map(h => {
+        const x = cx(h*60);
+        return `<line x1="${x}" y1="${HDR_H-2}" x2="${x}" y2="${SVG_H-6}" stroke="#e5e5ea" stroke-width="0.8"/>
+                <text x="${x}" y="${HDR_H-6}" font-size="8" fill="#8e8e93" text-anchor="middle">${h}h</text>`;
+      }).join('');
+
+      const halfHourOpens = [...new Set(markets.map(m => m.openMin).filter(min => min%60===30))];
+      const halfTicks = halfHourOpens.map(min => {
+        const x = cx(min);
+        return `<line x1="${x}" y1="${HDR_H-2}" x2="${x}" y2="${SVG_H-6}" stroke="#d1d1d6" stroke-width="0.6" stroke-dasharray="3,2"/>
+                <text x="${x}" y="${HDR_H-6}" font-size="7.5" fill="#aeaeb2" text-anchor="middle">${fmtMin(min)}</text>`;
+      }).join('');
+
+      // Línea de hora actual — etiqueta debajo del gráfico para no colisionar con el eje
+      const nowLine = `
+        <line x1="${nowX.toFixed(1)}" y1="${HDR_H-2}" x2="${nowX.toFixed(1)}" y2="${SVG_H-6}" stroke="#0071e3" stroke-width="1.5"/>
+        <circle cx="${nowX.toFixed(1)}" cy="${HDR_H-2}" r="3" fill="#0071e3"/>
+        <text x="${nowX.toFixed(1)}" y="${SVG_H+10}" font-size="8" fill="#0071e3" text-anchor="middle" font-weight="600">${nowLbl}</text>`;
+
+      const svgContent = `<svg width="100%" viewBox="0 0 ${SVG_W} ${SVG_H+14}" style="max-width:${SVG_W}px;overflow:visible;display:block">
+        ${majorTicks}${halfTicks}${bars}${nowLine}
+      </svg>`;
+
       document.querySelector('thead').style.display = 'none';
-      // hours computed dynamically in rows2
-      const scrollEl = document.getElementById('scroll');
       const barH = document.getElementById('bar').offsetHeight;
-      tbody.innerHTML=`<tr class="no-hover"><td colspan="9" style="padding:0;border:none">
-        <div style="height:calc(100vh - ${barH}px);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:8vh;gap:6px;background:var(--sur)">
-          <div style="font-size:32px;margin-bottom:4px">🛌 💤</div>
-          <div style="font-size:16px;font-weight:600;color:var(--txt);margin-top:16px;margin-bottom:16px">Todos los mercados están cerrados</div>
-          
-          <div style="display:flex;flex-direction:column;gap:6px;text-align:left">
-            ${rows2.map(r=>`
-              <div style="display:flex;gap:16px;align-items:baseline">
-                <span style="font-size:12px;font-weight:600;color:var(--txt2);min-width:140px">${r[0]}</span>
-                <span style="font-size:12px;color:var(--txt3);font-family:var(--fnum)">${r[1]}</span>
-                <span style="font-size:11px;color:var(--lbl);font-family:var(--fnum)">${r[2]}</span>
-              </div>
-            `).join('')}
-          </div>
+      tbody.innerHTML=`<tr class="no-hover"><td colspan="8" style="padding:0;border:none">
+        <div style="min-height:calc(100vh - ${barH}px);display:flex;flex-direction:column;align-items:center;
+                    justify-content:flex-start;padding:6vh 16px 24px;gap:0;background:var(--sur)">
+          <div style="font-size:26px;margin-bottom:8px">🛌 💤</div>
+          <div style="font-size:15px;font-weight:600;color:#1c1c1e;margin-bottom:20px">Todos los mercados cerrados</div>
+          ${svgContent}
         </div>
       </td></tr>`;
       return;
     }
-    tbody.innerHTML='<tr class="row-empty"><td colspan="9">Sin resultados</td></tr>';
+    tbody.innerHTML='<tr class="row-empty"><td colspan="8">Sin resultados</td></tr>';
     return;
   }
 
@@ -1369,7 +1379,6 @@ function render(){
     const trCls=[r.flag?'flagged':'',r.price==null?'unloaded':''].filter(Boolean).join(' ');
 
     return `<tr id="${rid}" class="${trCls}">
-      <td class="ci">${i+1}</td>
       <td class="cfl"><span class="bfl ${r.flag?'on':''}">🔥</span></td>
       <td class="ctk">${r.tick}<span class="mkt-inline ${isMarketOpen(r.mkt)?'open':'closed'}">${MF[r.mkt]||r.mkt}</span></td>
       <td class="cnm col-empresa" title="${r.name||''}">${nmStr}</td>
@@ -1384,17 +1393,12 @@ function render(){
 
 
 
-// ── TOAST ──
-let _tt;
+// ── TOAST (simple) ──
 function toast(msg){
-  const el=document.getElementById('toast');
-  el.textContent=msg;
-  // Force reflow to restart animation if already showing
-  el.classList.remove('show');
-  void el.offsetWidth;
-  el.classList.add('show');
-  clearTimeout(_tt);
-  _tt=setTimeout(()=>el.classList.remove('show'),2600);
+  const t = document.getElementById('idx-toast');
+  t.classList.add('simple');
+  document.getElementById('it-msg').textContent = msg;
+  _ntShow();
 }
 
 // ── INIT ──
@@ -1405,13 +1409,18 @@ function adjustScrollTop() {
 window.addEventListener('resize', adjustScrollTop);
 new ResizeObserver(adjustScrollTop).observe(document.getElementById('bar'));
 updateStats(); render(); loadSheet(true); loadFX(); loadIndices();
+setTimeout(() => document.getElementById('ver').classList.add('hidden'), 3000);
 </script>
 
-<div id="ver">myRadar v1.01</div>
+<div id="ver">myRadar v1.02</div>
 
 <div id="idx-toast">
+  <div class="it-msg" id="it-msg"></div>
   <div class="it-header">
-    <span class="it-name" id="it-name">–</span>
+    <div class="it-titles">
+      <span class="it-name" id="it-name">–</span>
+      <span class="it-market" id="it-market"></span>
+    </div>
     <span class="fx-val" id="it-val">–</span>
   </div>
   <div class="it-row"><span id="it-perc-lbl">Umbrales</span><b><span id="it-p20">–</span> / <span id="it-p80">–</span></b></div>
