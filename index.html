@@ -692,7 +692,7 @@ async function loadSheet(silent=false){
     const now=new Date();
     document.getElementById('last-upd').textContent=now.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     updateStats(); render();
-    if(!silent) showCard('myRadar', 'actualizado', rows.length);
+    if(!silent) showCard('Datos de mercado actualizados', '', null);
   }catch(e){
     if(!silent) toast('Error: '+e.message);
   }
