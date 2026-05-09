@@ -1292,10 +1292,28 @@ function render(){
       const nowLbl = `${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2,'0')}`;
       const SVG_W = 380, LBL_W = 56, CITY_W = 68;
       const CHART_W = SVG_W - LBL_W - CITY_W;
-      const ROW_H = 26, HDR_H = 28;
-      const SVG_H = HDR_H + markets.length * ROW_H + 8;
+      const ROW_H = 26;
       const cx = min => LBL_W + min / 1440 * CHART_W;
       const nowX = cx(nowMin);
+
+      // ── Anti-colisión: asignar fila a cada horario de apertura/cierre ──
+      const allEventMins = [...new Set([
+        ...markets.map(m => m.openMin),
+        ...markets.map(m => m.closeMin)
+      ])].sort((a, b) => a - b);
+
+      const MIN_PX_GAP = 24; // píxeles mínimos entre etiquetas en la misma fila
+      const rowMaxX = [];
+      const eventRows = allEventMins.map(min => {
+        const x = cx(min);
+        let row = 0;
+        while (rowMaxX[row] !== undefined && x - rowMaxX[row] < MIN_PX_GAP) row++;
+        rowMaxX[row] = x;
+        return { min, x, row };
+      });
+      const maxRow = eventRows.length ? Math.max(...eventRows.map(r => r.row)) : 0;
+      const HDR_H = 16 + (maxRow + 1) * 12; // 12px por fila de etiquetas
+      const SVG_H = HDR_H + markets.length * ROW_H + 8;
 
       // Barras por mercado (NYSE/NASDAQ en dos líneas)
       const bars = markets.map((m, i) => {
@@ -1319,28 +1337,27 @@ function render(){
           <text x="${LBL_W+CHART_W+5}" y="${mid+4}" font-size="10" fill="#636366">${m.city}</text>`;
       }).join('');
 
-      // Eje: líneas cada 6h etiquetadas + medias horas de apertura discontinuas
-      const majorTicks = [0,6,12,18,24].map(h => {
-        const x = cx(h*60);
-        return `<line x1="${x}" y1="${HDR_H-2}" x2="${x}" y2="${SVG_H-6}" stroke="#e5e5ea" stroke-width="0.8"/>
-                <text x="${x}" y="${HDR_H-6}" font-size="8" fill="#8e8e93" text-anchor="middle">${h}h</text>`;
+      // Cuadrícula cada 6h (líneas de fondo, sin etiquetas)
+      const gridLines = [0,6,12,18,24].map(h => {
+        const x = cx(h*60).toFixed(1);
+        return `<line x1="${x}" y1="${HDR_H-2}" x2="${x}" y2="${SVG_H-6}" stroke="#e5e5ea" stroke-width="0.8"/>`;
       }).join('');
 
-      const halfHourOpens = [...new Set(markets.map(m => m.openMin).filter(min => min%60===30))];
-      const halfTicks = halfHourOpens.map(min => {
-        const x = cx(min);
-        return `<line x1="${x}" y1="${HDR_H-2}" x2="${x}" y2="${SVG_H-6}" stroke="#d1d1d6" stroke-width="0.6" stroke-dasharray="3,2"/>
-                <text x="${x}" y="${HDR_H-6}" font-size="7.5" fill="#aeaeb2" text-anchor="middle">${fmtMin(min)}</text>`;
+      // Etiquetas de apertura/cierre de todos los mercados (escalonadas)
+      const eventTicks = eventRows.map(({ min, x, row }) => {
+        const ty = HDR_H - 4 - (maxRow - row) * 12;
+        return `
+          <line x1="${x.toFixed(1)}" y1="${HDR_H-2}" x2="${x.toFixed(1)}" y2="${SVG_H-6}" stroke="#d1d1d6" stroke-width="0.6" stroke-dasharray="3,2"/>
+          <text x="${x.toFixed(1)}" y="${ty}" font-size="7.5" fill="#8e8e93" text-anchor="middle">${fmtMin(min)}</text>`;
       }).join('');
 
-      // Línea de hora actual — etiqueta debajo del gráfico para no colisionar con el eje
+      // Línea de hora actual — sin punto azul, etiqueta debajo del gráfico
       const nowLine = `
         <line x1="${nowX.toFixed(1)}" y1="${HDR_H-2}" x2="${nowX.toFixed(1)}" y2="${SVG_H-6}" stroke="#0071e3" stroke-width="1.5"/>
-        <circle cx="${nowX.toFixed(1)}" cy="${HDR_H-2}" r="3" fill="#0071e3"/>
         <text x="${nowX.toFixed(1)}" y="${SVG_H+10}" font-size="8" fill="#0071e3" text-anchor="middle" font-weight="600">${nowLbl}</text>`;
 
       const svgContent = `<svg width="100%" viewBox="0 0 ${SVG_W} ${SVG_H+14}" style="max-width:${SVG_W}px;overflow:visible;display:block">
-        ${majorTicks}${halfTicks}${bars}${nowLine}
+        ${gridLines}${eventTicks}${bars}${nowLine}
       </svg>`;
 
       document.querySelector('thead').style.display = 'none';
@@ -1412,7 +1429,7 @@ updateStats(); render(); loadSheet(true); loadFX(); loadIndices();
 setTimeout(() => document.getElementById('ver').classList.add('hidden'), 3000);
 </script>
 
-<div id="ver">myRadar v1.02</div>
+<div id="ver">myRadar v1.03</div>
 
 <div id="idx-toast">
   <div class="it-msg" id="it-msg"></div>
