@@ -227,6 +227,17 @@ html, body {
 .it-titles  { display:flex; flex-direction:column; gap:1px; }
 .it-name    { font-size:12px; font-weight:500; color:var(--txt); line-height:1.3; }
 .it-market  { font-size:10px; color:var(--lbl); line-height:1.3; }
+/* Badge de estado: caro/barato/vol alta */
+#it-status {
+  display: none; text-align: center;
+  font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  border-radius: 7px; padding: 2px 10px; margin-bottom: 7px;
+}
+#it-status.visible { display: block; }
+#it-status.st-cheap { background: rgba(52,199,89,.13);  color: #1a7a35; }
+#it-status.st-dear  { background: rgba(255,59,48,.11);  color: #b02020; }
+#it-status.st-vmid  { background: rgba(255,149,0,.13);  color: #b86200; }
+#it-status.st-vhigh { background: rgba(255,59,48,.11);  color: #b02020; }
 /* Modo card (filtros): centrado, sin filas de detalle */
 #idx-toast.card .it-header { justify-content:center; margin-bottom:0; }
 #idx-toast.card .it-titles { align-items:center; text-align:center; }
@@ -817,11 +828,18 @@ function _ntShow() {
   _toastTimer = setTimeout(() => t.classList.remove('show'), 5000);
 }
 
+function setStatus(text, cls) {
+  const el = document.getElementById('it-status');
+  el.textContent = text || '';
+  el.className   = text ? `visible ${cls}` : '';
+}
+
 // Card compacto: header (nombre + subtítulo + valor opcional), sin filas de detalle
 function showCard(name, sub, val) {
   const t = document.getElementById('idx-toast');
   t.classList.remove('simple');
   t.classList.add('card');
+  setStatus('', '');
   document.getElementById('it-name').textContent   = name || '';
   document.getElementById('it-market').textContent = sub  || '';
   const valEl = document.getElementById('it-val');
@@ -842,17 +860,14 @@ function showIdxInfo(ticker) {
   const t = document.getElementById('idx-toast');
   t.classList.remove('simple');
   t.classList.remove('card');
-  document.getElementById('it-name').textContent = d.name || ticker;
-  // Estado de volatilidad en el subtítulo
-  let idxStatus = '';
+  document.getElementById('it-name').textContent   = d.name   || ticker;
+  document.getElementById('it-market').textContent = d.market || '';
+  // Badge de volatilidad
   if (d.val != null && d.t1 != null && d.t2 != null) {
-    if      (d.val >= d.t2) idxStatus = `P${d.percHigh||'95'}% vol muy alta!`;
-    else if (d.val >= d.t1) idxStatus = `P${d.percLow ||'80'}% vol alta!`;
-  }
-  const mktStr = d.market || '';
-  document.getElementById('it-market').textContent = idxStatus
-    ? (mktStr ? `${mktStr} · ${idxStatus}` : idxStatus)
-    : mktStr;
+    if      (d.val >= d.t2) setStatus(`P${d.percHigh||'95'}% vol muy alta!`, 'st-vhigh');
+    else if (d.val >= d.t1) setStatus(`P${d.percLow ||'80'}% vol alta!`,    'st-vmid');
+    else                    setStatus('', '');
+  } else { setStatus('', ''); }
   const valEl = document.getElementById('it-val');
   valEl.style.display = ''; // resetear display oculto por showCard()
   valEl.textContent = d.val != null ? d.val.toFixed(2) : '–';
@@ -878,15 +893,14 @@ function showFxInfo(key) {
   const t = document.getElementById('idx-toast');
   t.classList.remove('simple');
   t.classList.remove('card');
-  document.getElementById('it-name').textContent = FX_LABELS[key] || key;
-  // Estado del par en el subtítulo: moneda extranjera caro/barato
+  document.getElementById('it-name').textContent   = FX_LABELS[key] || key;
+  document.getElementById('it-market').textContent = '';
   const foreignCur = key.slice(3); // "EURCHF" → "CHF"
-  let fxStatus = '';
   if (d.val != null && d.pLow != null && d.pHigh != null) {
-    if      (d.val >= d.pHigh) fxStatus = `${foreignCur} barato`;
-    else if (d.val <= d.pLow)  fxStatus = `${foreignCur} caro`;
-  }
-  document.getElementById('it-market').textContent = fxStatus;
+    if      (d.val >= d.pHigh) setStatus(`${foreignCur} barato`, 'st-cheap');
+    else if (d.val <= d.pLow)  setStatus(`${foreignCur} caro`,   'st-dear');
+    else                       setStatus('', '');
+  } else { setStatus('', ''); }
   const valEl = document.getElementById('it-val');
   valEl.style.display = ''; // resetear display oculto por showCard()
   valEl.textContent = d.val != null ? d.val.toFixed(4) : '–';
@@ -1454,6 +1468,7 @@ function render(){
 function toast(msg){
   const t = document.getElementById('idx-toast');
   t.classList.add('simple');
+  setStatus('', '');
   document.getElementById('it-msg').textContent = msg;
   _ntShow();
 }
@@ -1473,6 +1488,7 @@ setTimeout(() => document.getElementById('ver').classList.add('hidden'), 3000);
 
 <div id="idx-toast">
   <div class="it-msg" id="it-msg"></div>
+  <div id="it-status"></div>
   <div class="it-header">
     <div class="it-titles">
       <span class="it-name" id="it-name">–</span>
