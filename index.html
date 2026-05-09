@@ -1300,44 +1300,39 @@ function render(){
       const SVG_W = 380, LBL_W = 56, CITY_W = 68;
       const CHART_W = SVG_W - LBL_W - CITY_W;
       const ROW_H = 26;
-      const HDR_H  = 22; // cabecera: horas en punto
-      const FOOT_H = 18; // pie: medias horas
+      const HDR_H  = 22; // espacio para etiquetas top
+      const FOOT_H = 18; // espacio para etiquetas bottom
       const cx = min => LBL_W + min / 1440 * CHART_W;
       const nowX = cx(nowMin);
       const CHART_BOT = HDR_H + markets.length * ROW_H + 8;
       const SVG_H = CHART_BOT + FOOT_H;
 
-      // ── Separar eventos en horas en punto y medias horas ──
-      const hourMins = [...new Set([
+      // ── Todos los eventos únicos (apertura y cierre de cada mercado) ──
+      const allEventMins = [...new Set([
         ...markets.map(m => m.openMin),
         ...markets.map(m => m.closeMin)
-      ])].filter(m => m % 60 === 0).sort((a, b) => a - b);
+      ])].sort((a, b) => a - b);
 
-      const halfMins = [...new Set([
-        ...markets.map(m => m.openMin),
-        ...markets.map(m => m.closeMin)
-      ])].filter(m => m % 60 === 30).sort((a, b) => a - b);
+      // Para cada tiempo, encontrar el mercado más arriba (top) o más abajo (bottom)
+      // que lo usa como apertura o cierre, y obtener el borde de su barra azul
+      const barTop  = i => HDR_H + i * ROW_H + (ROW_H - 10) / 2;      // top edge
+      const barBot  = i => barTop(i) + 10;                              // bottom edge
 
-      // ── Agrupar tiempos próximos (< 100 min) en una sola etiqueta compacta ──
-      // Ejemplo: [480,540,600] → "8-9-10:00" / [930,1050] → "15-17:30"
-      function groupNearby(mins) {
-        if (!mins.length) return [];
-        const groups = [];
-        let g = [mins[0]];
-        for (let i = 1; i < mins.length; i++) {
-          if (mins[i] - mins[i-1] <= 100) g.push(mins[i]);
-          else { groups.push(g); g = [mins[i]]; }
-        }
-        groups.push(g);
-        return groups;
-      }
-      function fmtGroup(mins) {
-        if (mins.length === 1) return fmtMin(mins[0]);
-        const suffix = ':' + String(mins[0] % 60).padStart(2, '0');
-        return mins.map(m => String(Math.floor(((m % 1440) + 1440) % 1440 / 60))).join('-') + suffix;
-      }
-      const hourGroups = groupNearby(hourMins);
-      const halfGroups = groupNearby(halfMins);
+      // Asignar alternadamente arriba/abajo según orden cronológico
+      const eventItems = allEventMins.map((min, idx) => {
+        const side = idx % 2 === 0 ? 'top' : 'bot';
+        const mktIdxs = markets.reduce((a, m, i) => {
+          if (m.openMin === min || m.closeMin === min) a.push(i);
+          return a;
+        }, []);
+        if (!mktIdxs.length) return null;
+        // top: línea desde etiqueta hasta borde superior de la barra más alta
+        // bot: línea desde borde inferior de la barra más baja hasta etiqueta
+        const anchorY = side === 'top'
+          ? barTop(mktIdxs[0])
+          : barBot(mktIdxs[mktIdxs.length - 1]);
+        return { min, x: cx(min), side, anchorY };
+      }).filter(Boolean);
 
       // Barras por mercado (NYSE/NASDAQ en dos líneas)
       const bars = markets.map((m, i) => {
@@ -1361,34 +1356,30 @@ function render(){
           <text x="${LBL_W+CHART_W+5}" y="${mid+4}" font-size="10" fill="#636366">${m.city}</text>`;
       }).join('');
 
-      // ── Ticks cortos SOLO del lado de la etiqueta (no atraviesan las barras) ──
-      // Cabecera: tick de etiqueta → borde superior del gráfico
-      const topSvg = hourGroups.map(group => {
-        const cx0 = group.reduce((s, m) => s + cx(m), 0) / group.length; // centro del grupo
-        const ticks = group.map(m =>
-          `<line x1="${cx(m).toFixed(1)}" y1="${HDR_H-3}" x2="${cx(m).toFixed(1)}" y2="${HDR_H+5}"
-                stroke="#d1d1d6" stroke-width="0.6" stroke-dasharray="3,2"/>`
-        ).join('');
-        return ticks +
-          `<text x="${cx0.toFixed(1)}" y="${HDR_H-7}" font-size="7.5" fill="#8e8e93" text-anchor="middle">${fmtGroup(group)}</text>`;
+      // ── Líneas: desde borde de barra hasta etiqueta (arriba o abajo) ──
+      const LBL_TOP_Y = HDR_H - 7;      // baseline etiqueta top
+      const LBL_BOT_Y = CHART_BOT + 13; // baseline etiqueta bot
+
+      const tickLines = eventItems.map(({ x, side, anchorY }) => {
+        const xs = x.toFixed(1);
+        return side === 'top'
+          ? `<line x1="${xs}" y1="${LBL_TOP_Y + 3}" x2="${xs}" y2="${anchorY}" stroke="#d1d1d6" stroke-width="0.6" stroke-dasharray="3,2"/>`
+          : `<line x1="${xs}" y1="${anchorY}" x2="${xs}" y2="${LBL_BOT_Y - 4}" stroke="#d1d1d6" stroke-width="0.6" stroke-dasharray="3,2"/>`;
       }).join('');
 
-      // Pie: tick de borde inferior del gráfico → etiqueta
-      const botSvg = halfGroups.map(group => {
-        const cx0 = group.reduce((s, m) => s + cx(m), 0) / group.length;
-        const ticks = group.map(m =>
-          `<line x1="${cx(m).toFixed(1)}" y1="${CHART_BOT-5}" x2="${cx(m).toFixed(1)}" y2="${CHART_BOT+3}"
-                stroke="#d1d1d6" stroke-width="0.6" stroke-dasharray="3,2"/>`
-        ).join('');
-        return ticks +
-          `<text x="${cx0.toFixed(1)}" y="${CHART_BOT+13}" font-size="7.5" fill="#aeaeb2" text-anchor="middle">${fmtGroup(group)}</text>`;
+      const tickLabels = eventItems.map(({ min, x, side }) => {
+        const xs = x.toFixed(1);
+        return side === 'top'
+          ? `<text x="${xs}" y="${LBL_TOP_Y}" font-size="7.5" fill="#8e8e93" text-anchor="middle">${fmtMin(min)}</text>`
+          : `<text x="${xs}" y="${LBL_BOT_Y}" font-size="7.5" fill="#aeaeb2" text-anchor="middle">${fmtMin(min)}</text>`;
       }).join('');
 
-      // Línea de hora actual — estrictamente dentro del área de barras
+      // Línea de hora actual — dentro del área de barras
       const nowLine = `<line x1="${nowX.toFixed(1)}" y1="${HDR_H}" x2="${nowX.toFixed(1)}" y2="${CHART_BOT}" stroke="#0071e3" stroke-width="1.5"/>`;
 
+      // Orden de renderizado: líneas → barras → línea-ahora → etiquetas (etiquetas siempre al frente)
       const svgContent = `<svg width="100%" viewBox="0 0 ${SVG_W} ${SVG_H}" style="max-width:${SVG_W}px;overflow:visible;display:block">
-        ${topSvg}${bars}${nowLine}${botSvg}
+        ${tickLines}${bars}${nowLine}${tickLabels}
       </svg>`;
 
       document.querySelector('thead').style.display = 'none';
@@ -1460,7 +1451,7 @@ updateStats(); render(); loadSheet(true); loadFX(); loadIndices();
 setTimeout(() => document.getElementById('ver').classList.add('hidden'), 3000);
 </script>
 
-<div id="ver">myRadar v1.06</div>
+<div id="ver">myRadar v1.07</div>
 
 <div id="idx-toast">
   <div class="it-msg" id="it-msg"></div>
