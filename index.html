@@ -1300,30 +1300,43 @@ function render(){
       const SVG_W = 380, LBL_W = 56, CITY_W = 68;
       const CHART_W = SVG_W - LBL_W - CITY_W;
       const ROW_H = 26;
-      const HDR_H = 34; // fila superior (horas en punto) + fila inferior (medias horas)
+      const HDR_H   = 30; // cabecera: 2 sub-filas para horas en punto
+      const FOOT_H  = 16; // pie: medias horas bajo las barras
       const cx = min => LBL_W + min / 1440 * CHART_W;
       const nowX = cx(nowMin);
-      const SVG_H = HDR_H + markets.length * ROW_H + 8;
+      const CHART_BOT = HDR_H + markets.length * ROW_H + 8; // y donde termina el área de barras
+      const SVG_H = CHART_BOT + FOOT_H;
 
-      // ── Etiquetas de eje: horas en punto (arriba) y medias horas (abajo) ──
-      const allEventMins = [...new Set([
+      // ── Horas en punto → hasta 2 sub-filas en cabecera (greedy anti-colisión) ──
+      const hourMins = [...new Set([
         ...markets.map(m => m.openMin),
         ...markets.map(m => m.closeMin)
-      ])].sort((a, b) => a - b);
+      ])].filter(m => m % 60 === 0).sort((a, b) => a - b);
 
-      const MIN_PX_GAP = 26; // espacio mínimo para no solapar etiquetas
-      function visibleTicks(mins) {
-        const out = []; let lastX = -Infinity;
-        for (const min of mins) {
-          const x = cx(min);
-          if (x - lastX >= MIN_PX_GAP) { out.push({ min, x }); lastX = x; }
-        }
-        return out;
+      const halfMins = [...new Set([
+        ...markets.map(m => m.openMin),
+        ...markets.map(m => m.closeMin)
+      ])].filter(m => m % 60 === 30).sort((a, b) => a - b);
+
+      const MIN_PX_TOP = 22; // ~ancho de "10:00" a 7.5px + margen
+      const topSubRows = []; // lastX por sub-fila (máx 2)
+      const topTicks = hourMins.map(min => {
+        const x = cx(min);
+        let row = 0;
+        while (row < 2 && topSubRows[row] !== undefined && x - topSubRows[row] < MIN_PX_TOP) row++;
+        if (row >= 2) return null;
+        topSubRows[row] = x;
+        return { min, x, row };
+      }).filter(Boolean);
+      const HDR_ROW_Y = [HDR_H - 18, HDR_H - 6]; // y de cada sub-fila
+
+      // ── Medias horas → fila única en el pie ──
+      const botTicks = [];
+      let lastBotX = -Infinity;
+      for (const min of halfMins) {
+        const x = cx(min);
+        if (x - lastBotX >= 26) { botTicks.push({ min, x }); lastBotX = x; }
       }
-      const topTicks = visibleTicks(allEventMins.filter(m => m % 60 === 0));  // horas en punto
-      const botTicks = visibleTicks(allEventMins.filter(m => m % 60 === 30)); // medias horas
-      const TOP_Y = HDR_H - 19; // fila superior
-      const BOT_Y = HDR_H - 6;  // fila inferior
 
       // Barras por mercado (NYSE/NASDAQ en dos líneas)
       const bars = markets.map((m, i) => {
@@ -1347,22 +1360,28 @@ function render(){
           <text x="${LBL_W+CHART_W+5}" y="${mid+4}" font-size="10" fill="#636366">${m.city}</text>`;
       }).join('');
 
-      // Líneas verticales de apertura/cierre + etiquetas en dos filas
-      const eventTicks = [
-        ...topTicks.map(({ min, x }) => `
-          <line x1="${x.toFixed(1)}" y1="${HDR_H-2}" x2="${x.toFixed(1)}" y2="${SVG_H-6}" stroke="#d1d1d6" stroke-width="0.6" stroke-dasharray="3,2"/>
-          <text x="${x.toFixed(1)}" y="${TOP_Y}" font-size="7.5" fill="#8e8e93" text-anchor="middle">${fmtMin(min)}</text>`),
-        ...botTicks.map(({ min, x }) => `
-          <line x1="${x.toFixed(1)}" y1="${HDR_H-2}" x2="${x.toFixed(1)}" y2="${SVG_H-6}" stroke="#d1d1d6" stroke-width="0.6" stroke-dasharray="3,2"/>
-          <text x="${x.toFixed(1)}" y="${BOT_Y}" font-size="7.5" fill="#aeaeb2" text-anchor="middle">${fmtMin(min)}</text>`)
-      ].join('');
+      // ── Líneas verticales de eventos (solo en el área de barras) ──
+      const allEventMins = [...new Set([...hourMins, ...halfMins])];
+      const tickLines = allEventMins.map(min => {
+        const x = cx(min).toFixed(1);
+        return `<line x1="${x}" y1="${HDR_H}" x2="${x}" y2="${CHART_BOT-2}" stroke="#d1d1d6" stroke-width="0.6" stroke-dasharray="3,2"/>`;
+      }).join('');
 
-      // Línea de hora actual — sin etiqueta
-      const nowLine = `
-        <line x1="${nowX.toFixed(1)}" y1="${HDR_H-2}" x2="${nowX.toFixed(1)}" y2="${SVG_H-6}" stroke="#0071e3" stroke-width="1.5"/>`;
+      // Etiquetas cabecera: horas en punto (hasta 2 sub-filas)
+      const topLabels = topTicks.map(({ min, x, row }) =>
+        `<text x="${x.toFixed(1)}" y="${HDR_ROW_Y[row]}" font-size="7.5" fill="#8e8e93" text-anchor="middle">${fmtMin(min)}</text>`
+      ).join('');
 
-      const svgContent = `<svg width="100%" viewBox="0 0 ${SVG_W} ${SVG_H+4}" style="max-width:${SVG_W}px;overflow:visible;display:block">
-        ${eventTicks}${bars}${nowLine}
+      // Etiquetas pie: medias horas
+      const botLabels = botTicks.map(({ min, x }) =>
+        `<text x="${x.toFixed(1)}" y="${CHART_BOT+11}" font-size="7.5" fill="#aeaeb2" text-anchor="middle">${fmtMin(min)}</text>`
+      ).join('');
+
+      // Línea de hora actual — acotada al área de barras, sin sobresalir
+      const nowLine = `<line x1="${nowX.toFixed(1)}" y1="${HDR_H}" x2="${nowX.toFixed(1)}" y2="${CHART_BOT-2}" stroke="#0071e3" stroke-width="1.5"/>`;
+
+      const svgContent = `<svg width="100%" viewBox="0 0 ${SVG_W} ${SVG_H}" style="max-width:${SVG_W}px;overflow:visible;display:block">
+        ${tickLines}${bars}${nowLine}${topLabels}${botLabels}
       </svg>`;
 
       document.querySelector('thead').style.display = 'none';
@@ -1434,7 +1453,7 @@ updateStats(); render(); loadSheet(true); loadFX(); loadIndices();
 setTimeout(() => document.getElementById('ver').classList.add('hidden'), 3000);
 </script>
 
-<div id="ver">myRadar v1.04</div>
+<div id="ver">myRadar v1.05</div>
 
 <div id="idx-toast">
   <div class="it-msg" id="it-msg"></div>
