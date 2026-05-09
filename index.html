@@ -84,25 +84,24 @@ html, body {
   align-items: center; justify-content: center;
   gap: 1px;
   flex: 0 0 auto;
-  background: var(--sur);
-  border: 1px solid transparent;
+  background: #fff;
+  border: none;
   border-radius: 8px;
   padding: 3px 8px;
   height: 36px;
   min-width: 44px;
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(0,0,0,.06);
-  transition: background .15s, border-color .15s, box-shadow .15s;
+  transition: box-shadow .15s;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 .statbtn:hover {
-  background: rgba(0,0,0,.03);
+  box-shadow: 0 1px 4px rgba(0,0,0,.10);
 }
 .statbtn.active {
   background: #fff;
-  border: 1.5px solid #1d1d1f;
-  box-shadow: 0 3px 8px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.1);
+  box-shadow: 0 0 0 1.5px #1d1d1f, 0 3px 8px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.1);
 }
 .statbtn.active .stat-l { color: #3a3a3c; }
 .statbtn.active .stat-v { color: #1d1d1f; }
@@ -926,20 +925,26 @@ function sortBy(key){
 }
 
 // ── FILTER ──
+function baseRows() {
+  // Filas base: aplica filtro de mercado si está activo
+  return mktFilter === 'open' ? rows.filter(r => isMarketOpen(r.mkt)) : rows;
+}
+
 function filterCount(mode) {
+  const base = baseRows();
   switch(mode) {
-    case 'all':     return rows.length;
-    case 'loaded':  return rows.filter(r=>r.price!=null).length;
-    case 'up':      return rows.filter(r=>r.price!=null&&upside(r)>0).length;
-    case 'dn':      return rows.filter(r=>r.price!=null&&upside(r)!=null&&upside(r)<=0).length;
-    case 'flag':    return rows.filter(r=>r.flag).length;
-    case 'up-flag': return rows.filter(r=>r.flag&&r.price!=null&&upside(r)>0).length;
+    case 'all':     return base.length;
+    case 'loaded':  return base.filter(r=>r.price!=null).length;
+    case 'up':      return base.filter(r=>r.price!=null&&upside(r)>0).length;
+    case 'dn':      return base.filter(r=>r.price!=null&&upside(r)!=null&&upside(r)<=0).length;
+    case 'flag':    return base.filter(r=>r.flag).length;
+    case 'up-flag': return base.filter(r=>r.flag&&r.price!=null&&upside(r)>0).length;
     default: return null;
   }
 }
 
 function setFilter(mode){
-  const mktSub = mktFilter==='open' ? 'mercado abierto' : '';
+  const mktSub = mktFilter === 'open' ? 'mercados abiertos' : '';
   const MSGS = {
     'loaded':  n => `${n} empresas cargadas`,
     'up':      n => `${n} empresas baratas`,
@@ -947,13 +952,13 @@ function setFilter(mode){
     'flag':    n => `${n} empresas destacadas`,
     'up-flag': n => `${n} empresas baratas y destacadas`,
   };
-  // Toggle off if already active → show all
+  // Toggle off si ya está activo → mostrar todo
   if(filterMode===mode){
     filterMode='all';
     ['loaded','up','dn','flag','up-flag'].forEach(f=>{
       const el=document.getElementById('f-'+f); if(el) el.classList.remove('active');
     });
-    showCard(`${rows.length} empresas en myRadar`, mktSub, null);
+    showCard(`${filterCount('all')} empresas en myRadar`, mktSub, null);
     render();
     return;
   }
@@ -962,8 +967,7 @@ function setFilter(mode){
     const el=document.getElementById('f-'+f); if(el) el.classList.toggle('active',f===mode);
   });
   const n = filterCount(mode);
-  const sub = mode==='up-flag' ? '¡A comprar!' + (mktSub ? ' · '+mktSub : '') : mktSub;
-  showCard((MSGS[mode]||(() => mode))(n), sub, null);
+  showCard((MSGS[mode]||(() => mode))(n), mktSub, null);
   render();
 }
 
@@ -971,7 +975,10 @@ function toggleMktFilter(){
   mktFilter = mktFilter==='open' ? null : 'open';
   document.getElementById('mf-open').className='mktbtn'+(mktFilter?' on':'');
   updateMktDot();
-  showCard(mktFilter==='open' ? 'Filtrando por mercados abiertos' : 'Todos los mercados', '', null);
+  showCard(
+    mktFilter === 'open' ? 'Mostrando sólo mercados abiertos' : 'Mostrando todos los mercados',
+    '', null
+  );
   render();
 }
 
