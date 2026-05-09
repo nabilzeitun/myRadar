@@ -470,7 +470,6 @@ td {
       <div class="fx-chip idx-chip" data-idx="VHSI"  ><span class="fx-lbl">VHSI</span>  <span class="fx-val" id="fx-vhsi">—</span></div>
       <div class="fx-chip idx-chip" data-idx="VSTOXX"><span class="fx-lbl">VSTOXX</span><span class="fx-val" id="fx-vstoxx">—</span></div>
       <div class="fx-chip idx-chip" data-idx="VFTSE" ><span class="fx-lbl">VFTSE</span> <span class="fx-val" id="fx-vftse">—</span></div>
-      <div class="fx-chip idx-chip" data-idx="VDAX"  ><span class="fx-lbl">VDAX</span>  <span class="fx-val" id="fx-vdax">—</span></div>
     </div>
   </div>
 
@@ -774,7 +773,7 @@ async function loadIndices() {
     if (!res.ok) return;
     const lines = (await res.text()).trim().split('\n');
     const idMap = { VIX:'fx-vix', VSTOXX:'fx-vstoxx', VFTSE:'fx-vftse', VHSI:'fx-vhsi',
-                    RVX:'fx-rvx', VXD:'fx-vxd', VXN:'fx-vxn', VVIX:'fx-vvix', VDAX:'fx-vdax' };
+                    RVX:'fx-rvx', VXD:'fx-vxd', VXN:'fx-vxn', VVIX:'fx-vvix' };
     lines.forEach(line => {
       if (!line.trim()) return;
       const cols = splitLine(line.replace(/\r/g,''));
